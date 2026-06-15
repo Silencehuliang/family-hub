@@ -1,34 +1,33 @@
 /**
- * PC 端左侧导航
- * Phase 1:工作台 + 我的;Phase 2+:账单/待办/购物/日程
+ * PC 端左侧导航(动态从 registry 读取)
  */
 import { Menu, Typography } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  AppstoreOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { AppstoreOutlined, AccountBookOutlined, UserOutlined } from '@ant-design/icons';
 import { BRAND_COLOR } from '@family-hub/shared';
-
-// TODO: Phase 2 启用后把注释的菜单项加回来
-const items = [
-  { key: '/', icon: <AppstoreOutlined />, label: '工作台' },
-  // { key: '/bill', icon: <AccountBookOutlined />, label: '账单' },
-  // { key: '/todo', icon: <CheckSquareOutlined />, label: '待办' },
-  // { key: '/shopping', icon: <ShoppingCartOutlined />, label: '购物清单' },
-  // { key: '/calendar', icon: <CalendarOutlined />, label: '日程' },
-  { key: '/me', icon: <UserOutlined />, label: '我的' },
-];
+import { getNavItems } from '@/registry';
 
 export function SideNav() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 匹配当前路径到菜单 key
+  // 首页 + 模块导航 + 我的
+  const moduleNavs = getNavItems().filter((n) => n.to !== '/').map((n) => ({
+    key: n.to,
+    icon: n.icon === '📒' ? <AccountBookOutlined /> : <AppstoreOutlined />,
+    label: n.label,
+  }));
+
+  const items = [
+    { key: '/', icon: <AppstoreOutlined />, label: '工作台' },
+    ...moduleNavs,
+    { key: '/me', icon: <UserOutlined />, label: '我的' },
+  ];
+
   const activeKey =
     location.pathname === '/'
       ? '/'
-      : items.find((i) => i.key !== '/' && location.pathname.startsWith(i.key))?.key ?? '/';
+      : items.find((i) => i.key !== '/' && location.pathname.startsWith(i.key))?.key ?? '/me';
 
   return (
     <aside

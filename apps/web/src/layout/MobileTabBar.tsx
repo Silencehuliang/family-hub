@@ -1,27 +1,36 @@
 /**
- * 移动端底部 Tab 导航
- * Phase 1:工作台 + 我的;Phase 2+:账单/待办/购物/日程
+ * 移动端底部 Tab 导航(动态从 registry 读取)
  */
 import { TabBar } from 'antd-mobile';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  AppstoreOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { AppstoreOutlined, AccountBookOutlined, UserOutlined } from '@ant-design/icons';
+import { getNavItems } from '@/registry';
 
-// TODO: Phase 2 启用后把注释的 Tab 加回来
-const tabs = [
+// 首页 + 模块导航 + 我的
+const fixedTabs = [
   { key: '/', title: '工作台', icon: <AppstoreOutlined /> },
-  // { key: '/bill', title: '账单', icon: <AccountBookOutlined /> },
-  // { key: '/todo', title: '待办', icon: <CheckSquareOutlined /> },
-  // { key: '/shopping', title: '购物', icon: <ShoppingCartOutlined /> },
-  // { key: '/calendar', title: '日程', icon: <CalendarOutlined /> },
-  { key: '/me', title: '我的', icon: <UserOutlined /> },
 ];
 
 export function MobileTabBar() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 从 registry 读取模块导航项
+  const moduleNavs = getNavItems().filter((n) => n.to !== '/').map((n) => ({
+    key: n.to,
+    title: n.label,
+    icon: n.icon === '📒' ? <AccountBookOutlined /> : <AppstoreOutlined />,
+  }));
+
+  const tabs = [
+    ...fixedTabs,
+    ...moduleNavs,
+    { key: '/me', title: '我的', icon: <UserOutlined /> },
+  ];
+
+  // 匹配当前路径
+  const activeKey = tabs.find((t) => t.key !== '/' && location.pathname.startsWith(t.key))?.key
+    ?? (location.pathname === '/' ? '/' : '/me');
 
   return (
     <div
@@ -31,10 +40,7 @@ export function MobileTabBar() {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      <TabBar
-        activeKey={location.pathname === '/' ? '/' : tabs.find((t) => t.key !== '/' && location.pathname.startsWith(t.key))?.key ?? '/'}
-        onChange={(key) => navigate(key)}
-      >
+      <TabBar activeKey={activeKey} onChange={(key) => navigate(key)}>
         {tabs.map((t) => (
           <TabBar.Item key={t.key} icon={t.icon} title={t.title} />
         ))}

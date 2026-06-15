@@ -14,8 +14,8 @@ import { CreateFamily } from '@/pages/CreateFamily';
 import { RedeemInvite } from '@/pages/RedeemInvite';
 import { Login } from '@/pages/Login';
 import { SettingsPage } from '@/pages/SettingsPage';
-import { WorkspacePage } from '@/modules/workspace/WorkspacePage';
 import { NotFound } from '@/pages/NotFound';
+import { getModuleRoutes } from '@/registry';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,8 +48,10 @@ export default function App() {
             {/* 受保护页(需登录) */}
             <Route element={<RequireAuth />}>
               <Route element={<AppShell />}>
-                {/* 工作台 */}
-                <Route path="/" element={<WorkspacePage />} />
+                {/* 动态模块路由(从 registry 读取) */}
+                {getModuleRoutes().map((route, i) => (
+                  <Route key={i} path={route.path} element={route.element} />
+                ))}
                 {/* 设置 / 我的 */}
                 <Route path="/me" element={<SettingsPage />} />
               </Route>

@@ -4,8 +4,8 @@
  */
 import type { ModuleManifest } from './types';
 import { workspaceModule } from '@/modules/workspace';
-// Phase 2+ 启用:
-// import { billModule } from '@/modules/bill';
+import { billModule } from '@/modules/bill';
+// Phase 3+ 启用:
 // import { todoModule } from '@/modules/todo';
 // import { shoppingModule } from '@/modules/shopping';
 // import { calendarModule } from '@/modules/calendar';
@@ -13,7 +13,7 @@ import { workspaceModule } from '@/modules/workspace';
 /** 已注册模块(按 order 排序) */
 export const modules: ModuleManifest[] = [
   workspaceModule,
-  // billModule,
+  billModule,
   // todoModule,
   // shoppingModule,
   // calendarModule,

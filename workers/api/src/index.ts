@@ -11,6 +11,7 @@ import { authMiddleware } from './middleware/auth';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { deviceRoutes } from './routes/device';
+import { billRoutes } from './routes/bill';
 
 const app = new Hono<{ Bindings: Env; Variables: HonoVars }>();
 
@@ -31,17 +32,42 @@ app.route('/auth', authRoutes);
 // device 路由内部自行管理认证
 app.use('/api/*', authMiddleware);
 app.route('/api/device', deviceRoutes);
+app.route('/api/bill', billRoutes);
 
-// ── 工作台摘要(占位,Phase 2 启用) ─────────────────────────────
+// ── 工作台摘要 ────────────────────────────────────────────────
 app.get('/api/workspace/summary', async (c) => {
-  // TODO: Phase 2 实现
+  const { familyId } = c.var.auth;
+  const month = new Date().toISOString().slice(0, 7);
+
+  // 本月支出
+  const spending = await c.env.DB.prepare(
+    'SELECT COALESCE(SUM(amount), 0) as total FROM bill_record WHERE family_id = ? AND bill_date LIKE ? AND deleted_at IS NULL'
+  ).bind(familyId, `${month}%`).first<{ total: number }>();
+
+  // 总预算
+  const budget = await c.env.DB.prepare(
+    'SELECT amount FROM bill_budget WHERE family_id = ? AND month = ? AND category_l1 IS NULL'
+  ).bind(familyId, month).first<{ amount: number }>();
+
+  // 待买清单数
+  const shopCount = await c.env.DB.prepare(
+    'SELECT COUNT(*) as cnt FROM shop_item si JOIN shop_list sl ON sl.id = si.list_id WHERE sl.family_id = ? AND si.bought = 0'
+  ).bind(familyId).first<{ cnt: number }>();
+
+  // 近期日程(未来 7 天)
+  const weekLater = new Date();
+  weekLater.setDate(weekLater.getDate() + 7);
+  const events = await c.env.DB.prepare(
+    'SELECT id, title, start_at, type FROM event_item WHERE family_id = ? AND start_at >= ? AND start_at <= ? ORDER BY start_at LIMIT 5'
+  ).bind(familyId, Math.floor(Date.now() / 1000), Math.floor(weekLater.getTime() / 1000)).all();
+
   return c.json({
     data: {
-      monthSpending: 0,
-      monthBudget: 0,
+      monthSpending: spending?.total ?? 0,
+      monthBudget: budget?.amount,
       todayReminders: [],
-      pendingShopCount: 0,
-      upcomingEvents: [],
+      pendingShopCount: shopCount?.cnt ?? 0,
+      upcomingEvents: events.results ?? [],
     },
   });
 });
@@ -55,14 +81,24 @@ app.notFound((c) =>
 export default {
   fetch: app.fetch,
 
-  async scheduled(event: ScheduledEvent, _env: Env, _ctx: ExecutionContext) {
-    // Phase 5 实现:
+  async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
+    console.log('[cron] scheduled event triggered:', event.cron);
+
+    // Phase 5: 通知调度
     // ctx.waitUntil(Promise.all([
     //   notifyDispatcher.checkEvents(),
     //   notifyDispatcher.checkTodos(),
-    //   billRecurringService.tick(),
     //   billBudgetService.checkOverBudget(),
     // ]));
-    console.log('[cron] scheduled event triggered:', event.cron);
+
+    // Phase 2: 周期账单自动生成
+    try {
+      const { RecurringService } = await import('./modules/bill/RecurringService');
+      const svc = new RecurringService(env.DB);
+      const generated = await svc.tick();
+      if (generated > 0) console.log(`[cron] generated ${generated} recurring bills`);
+    } catch (err) {
+      console.error('[cron] recurring tick error:', err);
+    }
   },
 };

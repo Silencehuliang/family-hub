@@ -164,6 +164,64 @@ export interface BillRecurring {
   createdAt: number;
 }
 
+/** 预算 */
+export interface BillBudget {
+  id: string;
+  familyId: string;
+  categoryL1: string | null;
+  month: string;
+  amount: number;
+}
+
+/** 账单统计 */
+export interface BillStats {
+  total: number;
+  dailyAvg: number;
+  byCategory: Array<{
+    categoryId: string;
+    name: string;
+    icon: string;
+    color: string;
+    amount: number;
+    percent: number;
+  }>;
+  byMember: Array<{
+    memberId: string;
+    nickname: string;
+    amount: number;
+  }>;
+  trend: Array<{
+    month: string;
+    amount: number;
+  }>;
+  byTag: Array<{
+    tagId: string;
+    name: string;
+    amount: number;
+  }>;
+  budget: Array<{
+    categoryId?: string;
+    name?: string;
+    amount: number;
+    used: number;
+    overspent: boolean;
+  }>;
+}
+
+/** 导入任务 */
+export interface BillImportJob {
+  id: string;
+  familyId: string;
+  fileUrl: string;
+  status: 'parsing' | 'validating' | 'confirming' | 'importing' | 'done' | 'failed';
+  total: number;
+  success: number;
+  failed: number;
+  errorReportUrl?: string;
+  createdBy: string;
+  createdAt: number;
+}
+
 /** 通知偏好(每成员每类型) */
 export interface NotifyPref {
   type: NotifyType;

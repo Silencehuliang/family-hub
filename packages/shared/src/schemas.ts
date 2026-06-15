@@ -56,3 +56,66 @@ export const revokeDeviceSchema = z.object({
   deviceId: z.string().min(1),
 });
 export type RevokeDeviceInput = z.infer<typeof revokeDeviceSchema>;
+
+// ═══════════════════════════════════════════════════════════════
+// 账单相关 schema
+// ═══════════════════════════════════════════════════════════════
+
+/** 创建账单 */
+export const createBillSchema = z.object({
+  amount: z.number().positive().max(1_000_000),
+  categoryL1: z.string().min(1),
+  categoryL2: z.string().min(1),
+  payerId: z.string().min(1),
+  billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式 YYYY-MM-DD'),
+  note: z.string().max(200).optional(),
+  tags: z.array(z.string()).optional(),
+});
+export type CreateBillInput = z.infer<typeof createBillSchema>;
+
+/** 更新账单 */
+export const updateBillSchema = createBillSchema.partial();
+export type UpdateBillInput = z.infer<typeof updateBillSchema>;
+
+/** 创建标签 */
+export const createBillTagSchema = z.object({
+  name: z.string().min(1).max(20),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#FF8C42'),
+});
+export type CreateBillTagInput = z.infer<typeof createBillTagSchema>;
+
+/** 创建二级分类 */
+export const createBillCategorySchema = z.object({
+  parentId: z.string().min(1),
+  name: z.string().min(1).max(20),
+  icon: z.string().max(4).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+});
+export type CreateBillCategoryInput = z.infer<typeof createBillCategorySchema>;
+
+/** 设置预算 */
+export const setBillBudgetSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, '月份格式 YYYY-MM'),
+  categoryL1: z.string().optional(), // 不填 = 总预算
+  amount: z.number().positive().max(10_000_000),
+});
+export type SetBillBudgetInput = z.infer<typeof setBillBudgetSchema>;
+
+/** 创建周期账单 */
+export const createBillRecurringSchema = z.object({
+  amount: z.number().positive().max(1_000_000),
+  categoryL1: z.string().min(1),
+  categoryL2: z.string().min(1),
+  payerId: z.string().min(1),
+  cycle: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+  nextDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string().max(200).optional(),
+});
+export type CreateBillRecurringInput = z.infer<typeof createBillRecurringSchema>;
+
+/** 导入确认 */
+export const billImportConfirmSchema = z.object({
+  jobId: z.string().min(1),
+  skipFailed: z.boolean().default(true),
+});
+export type BillImportConfirmInput = z.infer<typeof billImportConfirmSchema>;
