@@ -1,0 +1,41 @@
+name = "family-hub-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ─── Cloudflare 绑定 ──────────────────────────────────────────
+# 首次部署前需创建真实资源并把 ID 填入下方占位符:
+#   wrangler d1 create family-hub
+#   wrangler r2 bucket create family-hub-assets
+#   wrangler kv namespace create KV
+
+[[d1_databases]]
+binding = "DB"
+database_name = "family-hub"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "family-hub-assets"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ─── 定时任务(通知调度)──────────────────────────────────────
+# 0 9 * * *      每天 9 点:日程/生日提醒
+# */30 * * * *   每 30 分钟:待办到期
+# 0 0 * * *      每天 0 点:周期账单生成 + 预算检查
+[triggers]
+crons = ["0 9 * * *", "*/30 * * * *", "0 0 * * *"]
+
+# ─── 非敏感变量(敏感的用 wrangler secret put)─────────────
+[vars]
+APP_BASE_URL = "http://localhost:8787"
+# VAPID 公钥(Phase 5 启用 Web Push 时生成真实值)
+VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"
+
+# ─── Secrets(用 wrangler secret put 设置,不入库)──────────
+# VAPID_PRIVATE_KEY      Web Push 私钥(Phase 5)
+# CONFIG_ENCRYPTION_KEY  飞书 webhook/secret 加密密钥(Phase 5)

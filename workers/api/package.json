@@ -1,0 +1,27 @@
+{
+  "name": "@family-hub/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run",
+    "test": "echo 'no tests yet'"
+  },
+  "dependencies": {
+    "@family-hub/shared": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.6.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.5.4",
+    "wrangler": "^3.78.0"
+  }
+}

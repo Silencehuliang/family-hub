@@ -1,0 +1,81 @@
+/**
+ * 认证路由(无需中间件,公开访问)
+ */
+import { Hono } from 'hono';
+import { createFamilySchema, redeemInviteSchema, loginSchema, createInviteSchema, changePinSchema } from '@family-hub/shared';
+import { AuthService } from '../modules/auth/AuthService';
+import { ok } from '../utils/response';
+import { authMiddleware, adminOnly } from '../middleware/auth';
+import type { Env, HonoVars } from '../env';
+
+export const authRoutes = new Hono<{ Bindings: Env; Variables: HonoVars }>();
+
+// ── 创建家庭(首成员 = 管理员) ──────────────────────────────────
+authRoutes.post('/create-family', async (c) => {
+  const body = await c.req.json();
+  const input = createFamilySchema.parse(body);
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  const result = await svc.createFamily(input);
+  return c.json({ data: result }, 201);
+});
+
+// ── 兑换邀请码 + 设备绑定 ──────────────────────────────────────
+authRoutes.post('/invite/redeem', async (c) => {
+  const body = await c.req.json();
+  const input = redeemInviteSchema.parse(body);
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  const result = await svc.redeemInvite(input);
+  return c.json({ data: result }, 201);
+});
+
+// ── PIN + 设备登录 ─────────────────────────────────────────────
+authRoutes.post('/login', async (c) => {
+  const body = await c.req.json();
+  const input = loginSchema.parse(body);
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  const result = await svc.login(input);
+  return ok(c, result);
+});
+
+// ── 以下需要认证 ───────────────────────────────────────────────
+authRoutes.use('/me', authMiddleware);
+authRoutes.use('/logout', authMiddleware);
+authRoutes.use('/pin', authMiddleware);
+authRoutes.use('/invite/create', authMiddleware, adminOnly);
+
+// ── 获取当前会话信息 ───────────────────────────────────────────
+authRoutes.get('/me', async (c) => {
+  const { memberId, familyId, deviceId } = c.var.auth;
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  const result = await svc.getMe(memberId, familyId, deviceId);
+  return ok(c, result);
+});
+
+// ── 登出 ───────────────────────────────────────────────────────
+authRoutes.post('/logout', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader?.slice(7) ?? '';
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  await svc.logout(token);
+  return ok(c, { success: true });
+});
+
+// ── 修改 PIN ───────────────────────────────────────────────────
+authRoutes.post('/pin', async (c) => {
+  const body = await c.req.json();
+  const input = changePinSchema.parse(body);
+  const { memberId } = c.var.auth;
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  await svc.changePin(memberId, input.oldPin, input.newPin);
+  return ok(c, { success: true });
+});
+
+// ── 生成邀请码(管理员) ────────────────────────────────────────
+authRoutes.post('/invite/create', async (c) => {
+  const body = await c.req.json();
+  const input = createInviteSchema.parse(body);
+  const { familyId } = c.var.auth;
+  const svc = new AuthService(c.env.DB, c.env.KV);
+  const result = await svc.createInvite(familyId, input.ttlHours, input.maxUses);
+  return c.json({ data: result }, 201);
+});

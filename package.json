@@ -1,0 +1,27 @@
+{
+  "name": "family-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "家庭管家 - PWA 家庭管理工具集(账单/待办/购物/日程),部署于 Cloudflare",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --stream run dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "db:migrate:local": "pnpm --filter @family-hub/api exec wrangler d1 migrations apply family-hub --local",
+    "db:migrate:remote": "pnpm --filter @family-hub/api exec wrangler d1 migrations apply family-hub --remote",
+    "dev:api": "pnpm --filter @family-hub/api dev",
+    "dev:web": "pnpm --filter @family-hub/web dev",
+    "build:web": "pnpm --filter @family-hub/web build",
+    "clean": "pnpm -r exec rimraf dist .wrangler node_modules"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5"
+  }
+}
