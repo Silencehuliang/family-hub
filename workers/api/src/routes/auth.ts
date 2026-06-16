@@ -2,7 +2,7 @@
  * 认证路由(无需中间件,公开访问)
  */
 import { Hono } from 'hono';
-import { createFamilySchema, redeemInviteSchema, loginSchema, createInviteSchema, changePinSchema } from '@family-hub/shared';
+import { createFamilySchema, redeemInviteSchema, loginSchema, createInviteSchema, changePinSchema, updateMemberSchema } from '@family-hub/shared';
 import { ok } from '../utils/response';
 import { createAuthService } from '../utils/serviceFactory';
 import { authMiddleware, adminOnly, setSessionCookie, clearSessionCookie } from '../middleware/auth';
@@ -63,6 +63,16 @@ authRoutes.get('/me', async (c) => {
   const { memberId, familyId, deviceId } = c.var.auth;
   const svc = createAuthService(c.env.DB, c.env.KV);
   const result = await svc.getMe(memberId, familyId, deviceId);
+  return ok(c, result);
+});
+
+// ── 更新个人资料 ────────────────────────────────────────────
+authRoutes.patch('/me', async (c) => {
+  const body = await c.req.json();
+  const input = updateMemberSchema.parse(body);
+  const { memberId } = c.var.auth;
+  const svc = createAuthService(c.env.DB, c.env.KV);
+  const result = await svc.updateProfile(memberId, input);
   return ok(c, result);
 });
 
