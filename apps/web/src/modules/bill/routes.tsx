@@ -7,6 +7,7 @@ import { BillListPage } from './BillListPage';
 import { BillEditPage } from './BillEditPage';
 import { BillDetailPage } from './BillDetailPage';
 import { BillImportPage } from './BillImportPage';
+import { BudgetPage } from './BudgetPage';
 
 const BillStatsPage = lazy(() => import('./BillStatsPage'));
 
@@ -17,4 +18,5 @@ export const billRoutes: RouteObject[] = [
   { path: '/bill/:id/edit', element: <BillEditPage /> },
   { path: '/bill/stats', element: <BillStatsPage /> },
   { path: '/bill/import', element: <BillImportPage /> },
+  { path: '/bill/budget', element: <BudgetPage /> },
 ];
