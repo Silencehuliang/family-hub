@@ -120,9 +120,9 @@ billRoutes.get('/export/csv', async (c) => {
 billRoutes.post('/import', async (c) => {
   const { familyId } = c.var.auth;
 
-  // 校验 Content-Type
+  // Content-Type 校验放宽——只要不是明确的多媒体/binary 就放行
   const contentType = c.req.header('content-type') ?? '';
-  if (!contentType.includes('text/csv') && !contentType.includes('text/plain')) {
+  if (contentType && !contentType.includes('text/') && !contentType.includes('application/octet-stream')) {
     return c.json({ error: { code: 'VALIDATION', message: '仅支持 CSV 格式' } }, 422);
   }
 
