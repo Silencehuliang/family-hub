@@ -4,7 +4,7 @@
  */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { ThemeProvider } from '@/core/theme/ThemeProvider';
 import { useAuthStore } from '@/core/auth/store';
 import { RequireAuth } from '@/core/auth/RequireAuth';
@@ -38,6 +38,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
+          <Suspense fallback={null}>
           <Routes>
             {/* 公开页(未登录可访问) */}
             <Route path="/welcome" element={publicElement ?? <Welcome />} />
@@ -60,6 +61,7 @@ export default function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

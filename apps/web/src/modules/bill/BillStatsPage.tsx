@@ -5,3 +5,5 @@ import { BillStatsPageDesktop } from './BillStatsPageDesktop';
 export function BillStatsPage() {
   return useMobile() ? <BillStatsPageMobile /> : <BillStatsPageDesktop />;
 }
+
+export default BillStatsPage;

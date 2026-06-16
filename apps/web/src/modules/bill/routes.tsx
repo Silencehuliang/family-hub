@@ -1,12 +1,14 @@
 /**
  * 账单模块路由
  */
+import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { BillListPage } from './BillListPage';
 import { BillEditPage } from './BillEditPage';
 import { BillDetailPage } from './BillDetailPage';
-import { BillStatsPage } from './BillStatsPage';
 import { BillImportPage } from './BillImportPage';
+
+const BillStatsPage = lazy(() => import('./BillStatsPage'));
 
 export const billRoutes: RouteObject[] = [
   { path: '/bill', element: <BillListPage /> },
