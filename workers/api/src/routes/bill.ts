@@ -122,7 +122,7 @@ billRoutes.post('/import', async (c) => {
 
   // 校验 Content-Type
   const contentType = c.req.header('content-type') ?? '';
-  if (!contentType.includes('text/csv')) {
+  if (!contentType.includes('text/csv') && !contentType.includes('text/plain')) {
     return c.json({ error: { code: 'VALIDATION', message: '仅支持 CSV 格式' } }, 422);
   }
 

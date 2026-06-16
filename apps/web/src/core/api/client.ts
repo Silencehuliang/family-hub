@@ -33,7 +33,9 @@ async function request<T>(path: string, opts: ReqOptions = {}): Promise<T> {
   }
 
   const headers: Record<string, string> = {};
-  if (!opts.plainText) {
+  if (opts.plainText) {
+    headers['Content-Type'] = 'text/csv; charset=utf-8';
+  } else {
     headers['Content-Type'] = 'application/json';
   }
 
