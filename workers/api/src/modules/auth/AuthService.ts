@@ -277,6 +277,11 @@ export class AuthService {
       throw new BizError(ErrorCode.VALIDATION, '没有需要更新的字段');
     }
 
+    const member = await findOne<{ nickname: string; avatar_url: string | null }>(
+      this.db, 'SELECT nickname, avatar_url FROM sys_member WHERE id = ?', memberId,
+    );
+    if (!member) throw new BizError(ErrorCode.NOT_FOUND, '成员不存在');
+
     await execute(
       this.db,
       `UPDATE sys_member SET ${sets.join(', ')} WHERE id = ?`,
@@ -284,14 +289,7 @@ export class AuthService {
       memberId,
     );
 
-    const updated = await findOne<{ nickname: string; avatar_url: string | null }>(
-      this.db,
-      'SELECT nickname, avatar_url FROM sys_member WHERE id = ?',
-      memberId,
-    );
-
-    if (!updated) throw new BizError(ErrorCode.NOT_FOUND, '成员不存在');
-    return { nickname: updated.nickname, avatarUrl: updated.avatar_url };
+    return { nickname: data.nickname ?? member.nickname, avatarUrl: data.avatarBase64 !== undefined ? (data.avatarBase64 || null) : member.avatar_url };
   }
 
   // ──────────────────────────────────────────────────────────
