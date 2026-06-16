@@ -254,6 +254,47 @@ export class AuthService {
   }
 
   // ──────────────────────────────────────────────────────────
+  // 更新个人资料（昵称/头像）
+  // ──────────────────────────────────────────────────────────
+  async updateProfile(memberId: string, data: {
+    nickname?: string;
+    avatarBase64?: string;
+  }): Promise<{ nickname: string; avatarUrl: string | null }> {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+
+    if (data.nickname !== undefined) {
+      sets.push('nickname = ?');
+      values.push(data.nickname);
+    }
+    if (data.avatarBase64 !== undefined) {
+      // 空字符串 = 清除头像; 非空 = 更新头像
+      sets.push('avatar_url = ?');
+      values.push(data.avatarBase64 || null);
+    }
+
+    if (sets.length === 0) {
+      throw new BizError(ErrorCode.VALIDATION, '没有需要更新的字段');
+    }
+
+    await execute(
+      this.db,
+      `UPDATE sys_member SET ${sets.join(', ')} WHERE id = ?`,
+      ...values,
+      memberId,
+    );
+
+    const updated = await findOne<{ nickname: string; avatar_url: string | null }>(
+      this.db,
+      'SELECT nickname, avatar_url FROM sys_member WHERE id = ?',
+      memberId,
+    );
+
+    if (!updated) throw new BizError(ErrorCode.NOT_FOUND, '成员不存在');
+    return { nickname: updated.nickname, avatarUrl: updated.avatar_url };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // 设备指纹恢复会话（PWA 无 cookie 时兜底）
   // ──────────────────────────────────────────────────────────
   async restoreSession(fingerprint: string): Promise<{ token: string; memberId: string } | null> {
