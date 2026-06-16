@@ -13,5 +13,5 @@ binding = "KV"
 id = "3686d84ff19d4e788a126e4b925e7216"
 
 [vars]
-APP_BASE_URL = "https://famhub-598.pages.dev"
+APP_BASE_URL = "https://silencehl.dpdns.org"
 VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"

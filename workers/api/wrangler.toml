@@ -33,7 +33,7 @@ crons = ["0 9 * * *", "*/30 * * * *", "0 0 * * *"]
 
 # ─── 非敏感变量(敏感的用 wrangler secret put)─────────────
 [vars]
-APP_BASE_URL = "https://famhub-598.pages.dev"
+APP_BASE_URL = "https://silencehl.dpdns.org"
 # VAPID 公钥(Phase 5 启用 Web Push 时生成真实值)
 VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"
 
