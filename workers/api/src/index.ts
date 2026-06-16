@@ -12,6 +12,8 @@ import { authRoutes } from './routes/auth';
 import { deviceRoutes } from './routes/device';
 import { billRoutes } from './routes/bill';
 import { workspaceRoutes } from './routes/workspace';
+import { todoRoutes } from './routes/todo';
+import { shopRoutes } from './routes/shop';
 
 const app = new Hono<{ Bindings: Env; Variables: HonoVars }>();
 
@@ -59,6 +61,8 @@ app.route('/auth', authRoutes);
 app.use('/api/*', authMiddleware);
 app.route('/api/device', deviceRoutes);
 app.route('/api/bill', billRoutes);
+app.route('/api/todo', todoRoutes);
+app.route('/api/shop', shopRoutes);
 app.route('/api/workspace', workspaceRoutes);
 
 // ── 404 ────────────────────────────────────────────────────────

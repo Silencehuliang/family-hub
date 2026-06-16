@@ -10,6 +10,8 @@ import { ImportService } from '../modules/bill/ImportService';
 import { RecurringService } from '../modules/bill/RecurringService';
 import { BudgetService } from '../modules/bill/BudgetService';
 import { AuthService } from '../modules/auth/AuthService';
+import { TodoService } from '../modules/todo/TodoService';
+import { ShopService } from '../modules/shop/ShopService';
 
 export function createBillService(db: D1Database): BillService {
   return new BillService(db);
@@ -37,4 +39,12 @@ export function createBudgetService(db: D1Database): BudgetService {
 
 export function createAuthService(db: D1Database, kv: KVNamespace): AuthService {
   return new AuthService(db, kv);
+}
+
+export function createTodoService(db: D1Database): TodoService {
+  return new TodoService(db);
+}
+
+export function createShopService(db: D1Database): ShopService {
+  return new ShopService(db);
 }

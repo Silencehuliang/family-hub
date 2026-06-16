@@ -5,17 +5,17 @@
 import type { ModuleManifest } from './types';
 import { workspaceModule } from '@/modules/workspace';
 import { billModule } from '@/modules/bill';
-// Phase 3+ 启用:
-// import { todoModule } from '@/modules/todo';
-// import { shoppingModule } from '@/modules/shopping';
+import { todoModule } from '@/modules/todo';
+import { shopModule } from '@/modules/shop';
+// Phase 4+ 启用:
 // import { calendarModule } from '@/modules/calendar';
 
 /** 已注册模块(按 order 排序) */
 export const modules: ModuleManifest[] = [
   workspaceModule,
   billModule,
-  // todoModule,
-  // shoppingModule,
+  todoModule,
+  shopModule,
   // calendarModule,
 ].sort((a, b) => a.order - b.order);
 

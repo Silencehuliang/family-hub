@@ -131,3 +131,75 @@ export const billImportConfirmSchema = z.object({
   skipFailed: z.boolean().default(true),
 });
 export type BillImportConfirmInput = z.infer<typeof billImportConfirmSchema>;
+
+// ═══════════════════════════════════════════════════════════════
+// 待办相关 schema
+// ═══════════════════════════════════════════════════════════════
+
+/** 创建待办 */
+export const createTodoSchema = z.object({
+  title: z.string().min(1).max(100),
+  note: z.string().max(500).optional(),
+  priority: z.enum(['high', 'mid', 'low']).default('mid'),
+  dueAt: z.number().positive().optional(),
+  assigneeIds: z.array(z.string()).optional(),
+  subtasks: z.array(z.object({ title: z.string().min(1).max(100) })).optional(),
+});
+export type CreateTodoInput = z.infer<typeof createTodoSchema>;
+
+/** 更新待办 */
+export const updateTodoSchema = createTodoSchema.partial();
+export type UpdateTodoInput = z.infer<typeof updateTodoSchema>;
+
+/** 修改待办状态 */
+export const setTodoStatusSchema = z.object({
+  status: z.enum(['todo', 'doing', 'done']),
+});
+export type SetTodoStatusInput = z.infer<typeof setTodoStatusSchema>;
+
+/** 添加子任务 */
+export const createSubtaskSchema = z.object({
+  title: z.string().min(1).max(100),
+});
+export type CreateSubtaskInput = z.infer<typeof createSubtaskSchema>;
+
+// ═══════════════════════════════════════════════════════════════
+// 购物清单相关 schema
+// ═══════════════════════════════════════════════════════════════
+
+/** 创建购物清单 */
+export const createShopListSchema = z.object({
+  name: z.string().min(1).max(50),
+});
+export type CreateShopListInput = z.infer<typeof createShopListSchema>;
+
+/** 添加商品 */
+export const createShopItemSchema = z.object({
+  name: z.string().min(1).max(100),
+  qty: z.number().positive().default(1),
+  unit: z.string().max(10).default('个'),
+  estPrice: z.number().positive().optional(),
+  category: z.string().max(20).optional(),
+  priority: z.enum(['high', 'mid', 'low']).default('mid'),
+  note: z.string().max(200).optional(),
+});
+export type CreateShopItemInput = z.infer<typeof createShopItemSchema>;
+
+/** 更新商品 */
+export const updateShopItemSchema = createShopItemSchema.partial();
+export type UpdateShopItemInput = z.infer<typeof updateShopItemSchema>;
+
+/** 购买商品 */
+export const buyShopItemSchema = z.object({
+  actualPrice: z.number().positive(),
+  buyerId: z.string().min(1),
+});
+export type BuyShopItemInput = z.infer<typeof buyShopItemSchema>;
+
+/** 联动账单 */
+export const shopToBillSchema = z.object({
+  categoryL1: z.string().min(1).default('cat_daily'),
+  categoryL2: z.string().min(1).default('cat_daily_paper'),
+  payerId: z.string().min(1),
+});
+export type ShopToBillInput = z.infer<typeof shopToBillSchema>;

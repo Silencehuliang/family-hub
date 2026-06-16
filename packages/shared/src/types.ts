@@ -100,10 +100,19 @@ export interface TodoItem {
   dueAt?: number;
   repeatRule?: string;
   assignees?: Member[];
+  subtasks?: TodoSubtask[];
   createdBy: string;
   completedBy?: string;
   completedAt?: number;
   createdAt: number;
+}
+
+export interface TodoSubtask {
+  id: string;
+  todoId: string;
+  title: string;
+  done: boolean;
+  sort: number;
 }
 
 /** 购物清单 */
