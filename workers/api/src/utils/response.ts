@@ -38,7 +38,19 @@ export function errorResponse(c: AppContext, err: unknown) {
       err.status as StatusCode,
     );
   }
+
+  // ZodError:参数校验失败
+  if (err && typeof err === 'object' && 'issues' in err && Array.isArray((err as { issues: unknown[] }).issues)) {
+    const zErr = err as { issues: Array<{ path: PropertyKey[]; message: string }> };
+    const first = zErr.issues[0];
+    const field = first?.path?.join('.') || undefined;
+    return c.json(
+      { error: { code: ErrorCode.VALIDATION, message: first?.message ?? '参数校验失败', ...(field ? { field } : {}) } },
+      422 as StatusCode,
+    );
+  }
+
   console.error('[unhandled]', err);
-  const code = ErrorCode.INTERNAL;
-  return c.json({ error: { code, message: '服务器内部错误' } }, errorStatus[code] as StatusCode);
+  const msg = err instanceof Error ? err.message : '服务器内部错误';
+  return c.json({ error: { code: ErrorCode.INTERNAL, message: msg } }, 500 as StatusCode);
 }

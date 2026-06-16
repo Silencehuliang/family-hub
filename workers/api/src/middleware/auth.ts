@@ -43,22 +43,24 @@ export const authMiddleware: MiddlewareHandler<{ Bindings: Env; Variables: HonoV
   }
 
   // 校验设备是否仍被信任(防御:设备被吊销后 token 仍存在 KV)
-  const device = await c.env.DB.prepare(
-    'SELECT trusted FROM sys_device WHERE id = ?'
-  ).bind(session.deviceId).first<{ trusted: number }>();
+  // 管理员创建家庭时无设备绑定(deviceId 为空),跳过设备校验
+  if (session.deviceId) {
+    const device = await c.env.DB.prepare(
+      'SELECT trusted FROM sys_device WHERE id = ?'
+    ).bind(session.deviceId).first<{ trusted: number }>();
 
-  if (!device || !device.trusted) {
-    // 设备被吊销,清理会话
-    await c.env.KV.delete(sessionKey);
-    throw new BizError(ErrorCode.DEVICE_UNTRUSTED, '设备已被管理员吊销');
+    if (!device || !device.trusted) {
+      await c.env.KV.delete(sessionKey);
+      throw new BizError(ErrorCode.DEVICE_UNTRUSTED, '设备已被管理员吊销');
+    }
+
+    // 更新设备最后活跃时间(不阻塞响应)
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare(
+        'UPDATE sys_device SET last_active_at = strftime(\'%s\',\'now\') WHERE id = ?'
+      ).bind(session.deviceId).run()
+    );
   }
-
-  // 更新设备最后活跃时间(不阻塞响应)
-  c.executionCtx.waitUntil(
-    c.env.DB.prepare(
-      'UPDATE sys_device SET last_active_at = strftime(\'%s\',\'now\') WHERE id = ?'
-    ).bind(session.deviceId).run()
-  );
 
   // 注入认证上下文
   c.set('auth', {
