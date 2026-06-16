@@ -59,6 +59,15 @@ export const revokeDeviceSchema = z.object({
 });
 export type RevokeDeviceInput = z.infer<typeof revokeDeviceSchema>;
 
+/** 更新个人资料 */
+export const updateMemberSchema = z.object({
+  nickname: z.string().min(1).max(30).optional(),
+  avatarBase64: z.string().max(500_000).optional(),
+}).refine((data) => data.nickname !== undefined || data.avatarBase64 !== undefined, {
+  message: '至少需要更新一个字段',
+});
+export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;
+
 // ═══════════════════════════════════════════════════════════════
 // 账单相关 schema
 // ═══════════════════════════════════════════════════════════════
