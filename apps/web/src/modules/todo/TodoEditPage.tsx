@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Button, Input, Select, DatePicker, Space, message, Typography } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/core/api/client';
 import { useCreateTodo, useUpdateTodo, useTodo } from './api';
+import type { Member } from '@family-hub/shared';
 import dayjs from 'dayjs';
 
 const { Text, Title } = Typography;
@@ -15,11 +19,17 @@ export function TodoEditPage() {
   const createTodo = useCreateTodo();
   const updateTodo = useUpdateTodo();
 
+  const { data: members = [] } = useQuery({
+    queryKey: ['members'],
+    queryFn: () => api.get<Member[]>('/api/workspace/members'),
+  });
+
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [priority, setPriority] = useState<'high' | 'mid' | 'low'>('mid');
   const [dueAt, setDueAt] = useState<number | undefined>();
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [subtasks, setSubtasks] = useState<Array<{ title: string }>>([]);
 
   useEffect(() => {
     if (existing) {
@@ -28,11 +38,28 @@ export function TodoEditPage() {
       setPriority(existing.priority as 'high' | 'mid' | 'low');
       setDueAt(existing.dueAt);
       setAssigneeIds(existing.assignees?.map((a) => a.id) ?? []);
+      setSubtasks(existing.subtasks?.map((s) => ({ title: s.title })) ?? []);
     }
   }, [existing]);
 
+  const handleAddSubtask = () => {
+    setSubtasks([...subtasks, { title: '' }]);
+  };
+
+  const handleRemoveSubtask = (index: number) => {
+    setSubtasks(subtasks.filter((_, i) => i !== index));
+  };
+
+  const handleSubtaskChange = (index: number, value: string) => {
+    const next = [...subtasks];
+    next[index] = { title: value };
+    setSubtasks(next);
+  };
+
   const handleSubmit = async () => {
     if (!title.trim()) { message.error('请输入标题'); return; }
+
+    const validSubtasks = subtasks.filter((s) => s.title.trim().length > 0);
 
     try {
       if (isEdit && id) {
@@ -43,6 +70,7 @@ export function TodoEditPage() {
           priority,
           dueAt,
           assigneeIds,
+          subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
         });
         message.success('已更新');
         navigate(`/todo/${id}`);
@@ -53,6 +81,7 @@ export function TodoEditPage() {
           priority,
           dueAt,
           assigneeIds,
+          subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
         });
         message.success('已创建');
         navigate(`/todo/${result.id}`);
@@ -86,6 +115,18 @@ export function TodoEditPage() {
       </div>
 
       <div style={{ marginBottom: 16 }}>
+        <Text type="secondary">负责人</Text>
+        <Select
+          mode="multiple"
+          value={assigneeIds}
+          onChange={(v) => setAssigneeIds(v)}
+          style={{ width: '100%' }}
+          placeholder="选择负责人"
+          options={members.map((m) => ({ value: m.id, label: m.nickname }))}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
         <Text type="secondary">截止时间</Text>
         <DatePicker
           showTime
@@ -93,6 +134,24 @@ export function TodoEditPage() {
           onChange={(d) => setDueAt(d ? d.unix() : undefined)}
           style={{ width: '100%' }}
         />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text type="secondary">子任务</Text>
+          <Button type="link" size="small" icon={<PlusOutlined />} onClick={handleAddSubtask}>添加</Button>
+        </div>
+        {subtasks.map((sub, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+            <Input
+              size="small"
+              value={sub.title}
+              onChange={(e) => handleSubtaskChange(i, e.target.value)}
+              placeholder="子任务内容"
+            />
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => handleRemoveSubtask(i)} />
+          </div>
+        ))}
       </div>
 
       <Space style={{ marginTop: 16, width: '100%' }} direction="vertical">

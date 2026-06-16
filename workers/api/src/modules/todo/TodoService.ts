@@ -194,6 +194,7 @@ export class TodoService {
       priority?: string;
       dueAt?: number;
       assigneeIds?: string[];
+      subtasks?: Array<{ title: string }>;
     },
   ): Promise<TodoItem> {
     const existing = await findOne<TodoRow>(
@@ -228,6 +229,17 @@ export class TodoService {
       await batchExecute(this.db, batchStmts);
     }
 
+    if (input.subtasks !== undefined) {
+      const batchStmts: Array<{ sql: string; params: unknown[] }> = [
+        { sql: 'DELETE FROM todo_subtask WHERE todo_id = ?', params: [id] },
+        ...input.subtasks.map((sub, i) => ({
+          sql: 'INSERT INTO todo_subtask (id, todo_id, title, done, sort) VALUES (?, ?, ?, 0, ?)',
+          params: [nanoid(), id, sub.title, i],
+        })),
+      ];
+      await batchExecute(this.db, batchStmts);
+    }
+
     return this.getById(id, familyId);
   }
 
@@ -239,6 +251,7 @@ export class TodoService {
       familyId,
     );
     if (!existing) throw new BizError(ErrorCode.NOT_FOUND, '待办不存在');
+    if (existing.status === status) return this.getById(id, familyId);
 
     const ts = now();
     if (status === 'done') {
@@ -273,7 +286,12 @@ export class TodoService {
     );
     if (!existing) throw new BizError(ErrorCode.NOT_FOUND, '待办不存在');
 
-    await execute(this.db, 'DELETE FROM todo_item WHERE id = ?', id);
+    await this.db.batch([
+      this.db.prepare('DELETE FROM todo_assignee WHERE todo_id = ?').bind(id),
+      this.db.prepare('DELETE FROM todo_subtask WHERE todo_id = ?').bind(id),
+      this.db.prepare('DELETE FROM todo_log WHERE todo_id = ?').bind(id),
+      this.db.prepare('DELETE FROM todo_item WHERE id = ?').bind(id),
+    ]);
   }
 
   async addSubtask(

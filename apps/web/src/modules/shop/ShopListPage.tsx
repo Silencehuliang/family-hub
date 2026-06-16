@@ -1,7 +1,7 @@
 import { Card, Typography, Button, Empty, Spin, Popconfirm, message, Progress } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useShopLists } from './api';
+import { useShopLists, useDeleteShopList } from './api';
 
 const { Text, Title } = Typography;
 
@@ -11,6 +11,7 @@ const statusColor: Record<string, string> = { pending: '#999', active: '#FF8C42'
 export function ShopListPage() {
   const navigate = useNavigate();
   const { data: lists, isLoading } = useShopLists();
+  const deleteList = useDeleteShopList();
 
   if (isLoading) return <div style={{ padding: 24, textAlign: 'center' }}><Spin /></div>;
 
@@ -45,7 +46,15 @@ export function ShopListPage() {
                 </div>
                 <Popconfirm
                   title="确认删除该清单？"
-                  onConfirm={(e) => { e?.stopPropagation(); message.success('已删除'); }}
+                  onConfirm={async (e) => {
+                    e?.stopPropagation();
+                    try {
+                      await deleteList.mutateAsync(list.id);
+                      message.success('已删除');
+                    } catch (err: unknown) {
+                      message.error(err instanceof Error ? err.message : '删除失败');
+                    }
+                  }}
                   onCancel={(e) => e?.stopPropagation()}
                   okText="删除"
                   cancelText="取消"

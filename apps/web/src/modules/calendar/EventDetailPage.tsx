@@ -97,7 +97,7 @@ export function EventDetailPage() {
         {event.participants && event.participants.length > 0 && (
           <div>
             <Text type="secondary" style={{ fontSize: 12 }}>参与成员</Text>
-            <div><Text>{event.participants.map(p => p.memberId).join(', ')}</Text></div>
+            <div><Text>{event.participants.map(p => p.nickname).join(', ')}</Text></div>
           </div>
         )}
       </Space>

@@ -64,7 +64,9 @@ export class EventService {
 
     const participantRows = await findMany<Record<string, unknown>>(
       this.db,
-      `SELECT event_id, member_id FROM event_participant WHERE event_id IN (${placeholders})`,
+      `SELECT ep.event_id, ep.member_id, m.nickname
+       FROM event_participant ep JOIN sys_member m ON m.id = ep.member_id
+       WHERE ep.event_id IN (${placeholders})`,
       ...eventIds,
     );
 
@@ -99,7 +101,7 @@ export class EventService {
 
     const participantRows = await findMany<Record<string, unknown>>(
       this.db,
-      'SELECT event_id, member_id FROM event_participant WHERE event_id = ?',
+      'SELECT ep.event_id, ep.member_id, m.nickname FROM event_participant ep JOIN sys_member m ON m.id = ep.member_id WHERE ep.event_id = ?',
       id,
     );
     const participants = camelCaseAll<EventParticipant>(participantRows);
@@ -251,6 +253,10 @@ export class EventService {
     );
     if (!existing) throw new BizError(ErrorCode.NOT_FOUND, '日程不存在');
 
-    await execute(this.db, 'DELETE FROM event_item WHERE id = ?', id);
+    await this.db.batch([
+      this.db.prepare('DELETE FROM event_participant WHERE event_id = ?').bind(id),
+      this.db.prepare('DELETE FROM event_reminder WHERE event_id = ?').bind(id),
+      this.db.prepare('DELETE FROM event_item WHERE id = ?').bind(id),
+    ]);
   }
 }

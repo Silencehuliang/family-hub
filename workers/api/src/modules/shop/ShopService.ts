@@ -7,7 +7,10 @@ import { camelCase, camelCaseAll } from '../../utils/mapper';
 import { BillService } from '../bill/BillService';
 
 export class ShopService {
-  constructor(private db: D1Database) {}
+  constructor(
+    private db: D1Database,
+    private billServiceFactory: (db: D1Database) => BillService = (d) => new BillService(d),
+  ) {}
 
   async listLists(familyId: string): Promise<(ShopList & { itemCount: number; boughtCount: number })[]> {
     const rows = await findMany<Record<string, unknown>>(
@@ -104,6 +107,16 @@ export class ShopService {
     await execute(this.db, 'DELETE FROM shop_item WHERE id = ?', itemId);
   }
 
+  async deleteList(listId: string, familyId: string): Promise<void> {
+    const list = await findOne<Record<string, unknown>>(this.db, 'SELECT * FROM shop_list WHERE id = ? AND family_id = ?', listId, familyId);
+    if (!list) throw new BizError(ErrorCode.NOT_FOUND, '购物清单不存在');
+
+    await this.db.batch([
+      this.db.prepare('DELETE FROM shop_item WHERE list_id = ?').bind(listId),
+      this.db.prepare('DELETE FROM shop_list WHERE id = ?').bind(listId),
+    ]);
+  }
+
   async buyItem(itemId: string, listId: string, familyId: string, input: { actualPrice: number; buyerId: string }): Promise<ShopItem> {
     const list = await findOne<Record<string, unknown>>(this.db, 'SELECT * FROM shop_list WHERE id = ? AND family_id = ?', listId, familyId);
     if (!list) throw new BizError(ErrorCode.NOT_FOUND, '购物清单不存在');
@@ -132,7 +145,7 @@ export class ShopService {
     if (boughtItems.length === 0) throw new BizError(ErrorCode.VALIDATION, '没有已购买的商品');
 
     const total = boughtItems.reduce((sum, item) => sum + (item.actual_price as number || 0), 0);
-    const billSvc = new BillService(this.db);
+    const billSvc = this.billServiceFactory(this.db);
     const bill = await billSvc.create(familyId, memberId, {
       amount: total,
       categoryL1: input.categoryL1 ?? 'cat_daily',

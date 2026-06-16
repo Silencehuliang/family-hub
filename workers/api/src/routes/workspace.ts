@@ -3,8 +3,17 @@
  */
 import { Hono } from 'hono';
 import type { Env, HonoVars } from '../env';
+import { ok } from '../utils/response';
 
 export const workspaceRoutes = new Hono<{ Bindings: Env; Variables: HonoVars }>();
+
+workspaceRoutes.get('/members', async (c) => {
+  const { familyId } = c.var.auth;
+  const { results } = await c.env.DB.prepare(
+    'SELECT id, family_id, nickname, avatar_url, role, created_at FROM sys_member WHERE family_id = ? ORDER BY created_at ASC'
+  ).bind(familyId).all();
+  return ok(c, results ?? []);
+});
 
 workspaceRoutes.get('/summary', async (c) => {
   const { familyId } = c.var.auth;

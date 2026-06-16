@@ -70,3 +70,11 @@ export function useShopListToBill() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['shopLists'] }),
   });
 }
+
+export function useDeleteShopList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (listId: string) => api.delete(`/api/shop/list/${listId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['shopLists'] }),
+  });
+}

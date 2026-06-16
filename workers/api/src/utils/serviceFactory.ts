@@ -47,7 +47,7 @@ export function createTodoService(db: D1Database): TodoService {
 }
 
 export function createShopService(db: D1Database): ShopService {
-  return new ShopService(db);
+  return new ShopService(db, (d) => new BillService(d));
 }
 
 export function createEventService(db: D1Database): EventService {

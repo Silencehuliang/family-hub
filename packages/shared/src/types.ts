@@ -146,6 +146,7 @@ export interface ShopItem {
 export interface EventParticipant {
   eventId: string;
   memberId: string;
+  nickname: string;
 }
 
 /** 日程提醒 */
