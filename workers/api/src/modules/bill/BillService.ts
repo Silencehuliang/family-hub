@@ -7,6 +7,7 @@ import type { BillRecord, BillTag, BillStats } from '@family-hub/shared';
 import { BizError } from '../../utils/response';
 import { findOne, findMany, execute, batchExecute, now } from '../../db/client';
 import { nanoid } from '../../utils/crypto';
+import { camelCase, camelCaseAll } from '../../utils/mapper';
 
 /** 账单列表查询参数 */
 export interface BillQuery {
@@ -54,19 +55,20 @@ export class BillService {
     ).bind(...params).first<{ cnt: number }>();
     const total = countResult?.cnt ?? 0;
 
-    // 查询列表
-    const items = await findMany<BillRecord>(
+    // 查询列表(D1 返回 snake_case,映射为 camelCase)
+    const rawItems = await findMany<Record<string, unknown>>(
       this.db,
       `SELECT DISTINCT b.* FROM bill_record b ${joinClause} WHERE ${where} ORDER BY b.bill_date DESC, b.created_at DESC LIMIT ? OFFSET ?`,
       ...params, pageSize, offset,
     );
+    const items = camelCaseAll<BillRecord>(rawItems);
 
     // 批量查询标签
     if (items.length === 0) return { items: [], total: 0 };
 
     const recordIds = items.map((r) => r.id);
     const placeholders = recordIds.map(() => '?').join(',');
-    const tagRows = await findMany<BillTag & { record_id: string }>(
+    const tagRows = await findMany<Record<string, unknown>>(
       this.db,
       `SELECT t.*, rt.record_id FROM bill_tag t JOIN bill_record_tag rt ON rt.tag_id = t.id WHERE rt.record_id IN (${placeholders})`,
       ...recordIds,
@@ -74,8 +76,10 @@ export class BillService {
 
     const tagMap = new Map<string, BillTag[]>();
     for (const tr of tagRows) {
-      if (!tagMap.has(tr.record_id)) tagMap.set(tr.record_id, []);
-      tagMap.get(tr.record_id)!.push({ id: tr.id, familyId: tr.familyId, name: tr.name, color: tr.color, archived: tr.archived });
+      const tag = camelCase<BillTag & { record_id: string }>(tr);
+      const recordId = (tr as { record_id: string }).record_id;
+      if (!tagMap.has(recordId)) tagMap.set(recordId, []);
+      tagMap.get(recordId)!.push({ id: tag.id, familyId: tag.familyId, name: tag.name, color: tag.color, archived: Boolean(tag.archived) });
     }
 
     return {
@@ -88,19 +92,21 @@ export class BillService {
   // 详情
   // ──────────────────────────────────────────────────────────
   async getById(id: string, familyId: string): Promise<BillRecord & { tags: BillTag[] }> {
-    const record = await findOne<BillRecord>(
+    const raw = await findOne<Record<string, unknown>>(
       this.db,
       'SELECT * FROM bill_record WHERE id = ? AND family_id = ? AND deleted_at IS NULL',
       id,
       familyId,
     );
-    if (!record) throw new BizError(ErrorCode.NOT_FOUND, '账单不存在');
+    if (!raw) throw new BizError(ErrorCode.NOT_FOUND, '账单不存在');
+    const record = camelCase<BillRecord>(raw);
 
-    const tags = await findMany<BillTag>(
+    const rawTags = await findMany<Record<string, unknown>>(
       this.db,
       'SELECT t.* FROM bill_tag t JOIN bill_record_tag rt ON rt.tag_id = t.id WHERE rt.record_id = ?',
       id,
     );
+    const tags = camelCaseAll<BillTag>(rawTags);
 
     return { ...record, tags };
   }

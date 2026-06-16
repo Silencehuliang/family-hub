@@ -7,6 +7,7 @@ import type { BillTag } from '@family-hub/shared';
 import { BizError } from '../../utils/response';
 import { findMany, findOne, execute, now } from '../../db/client';
 import { nanoid } from '../../utils/crypto';
+import { camelCase, camelCaseAll } from '../../utils/mapper';
 
 export class TagService {
   constructor(private db: D1Database) {}
@@ -16,13 +17,14 @@ export class TagService {
     const sql = includeArchived
       ? 'SELECT * FROM bill_tag WHERE family_id = ? ORDER BY name'
       : 'SELECT * FROM bill_tag WHERE family_id = ? AND archived = 0 ORDER BY name';
-    return findMany<BillTag>(this.db, sql, familyId);
+    const raw = await findMany<Record<string, unknown>>(this.db, sql, familyId);
+    return camelCaseAll<BillTag>(raw);
   }
 
   /** 新建标签 */
   async create(familyId: string, input: { name: string; color?: string }): Promise<BillTag> {
     // 检查同名
-    const existing = await findOne<BillTag>(
+    const existing = await findOne<Record<string, unknown>>(
       this.db,
       'SELECT * FROM bill_tag WHERE family_id = ? AND name = ?',
       familyId,
@@ -39,12 +41,13 @@ export class TagService {
       id, familyId, input.name, input.color ?? '#FF8C42', ts,
     );
 
-    return findOne<BillTag>(this.db, 'SELECT * FROM bill_tag WHERE id = ?', id) as Promise<BillTag>;
+    return findOne<Record<string, unknown>>(this.db, 'SELECT * FROM bill_tag WHERE id = ?', id)
+      .then((r) => camelCase<BillTag>(r!));
   }
 
   /** 归档标签 */
   async archive(tagId: string, familyId: string): Promise<void> {
-    const tag = await findOne<BillTag>(
+    const tag = await findOne<Record<string, unknown>>(
       this.db,
       'SELECT * FROM bill_tag WHERE id = ? AND family_id = ?',
       tagId,
