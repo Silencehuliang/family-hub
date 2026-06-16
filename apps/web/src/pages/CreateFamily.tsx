@@ -40,7 +40,12 @@ export function CreateFamily() {
 
   return (
     <div style={{ padding: 24, maxWidth: 400, margin: '0 auto' }}>
-      <Title level={4}>创建家庭</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Title level={4} style={{ margin: 0 }}>创建家庭</Title>
+        <Button type="link" size="small" onClick={() => navigate('/redeem')}>
+          加入已有家庭
+        </Button>
+      </div>
       <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
         你将成为管理员，可邀请家人加入
       </Text>

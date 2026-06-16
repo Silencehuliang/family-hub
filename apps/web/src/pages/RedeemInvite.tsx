@@ -40,7 +40,12 @@ export function RedeemInvite() {
 
   return (
     <div style={{ padding: 24, maxWidth: 400, margin: '0 auto' }}>
-      <Title level={4}>加入家庭</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Title level={4} style={{ margin: 0 }}>加入家庭</Title>
+        <Button type="link" size="small" onClick={() => navigate('/create-family')}>
+          创建新家庭
+        </Button>
+      </div>
       <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
         请输入管理员提供的 6 位邀请码
       </Text>

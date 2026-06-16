@@ -27,16 +27,16 @@ export function Welcome() {
       <Text type="secondary" style={{ marginBottom: 48 }}>让家庭事务井井有条</Text>
 
       <Space direction="vertical" size="middle" style={{ width: '100%', maxWidth: 320 }}>
-        <Button type="primary" size="large" block onClick={() => navigate('/redeem')}>
-          加入家庭
-        </Button>
-        <Button size="large" block onClick={() => navigate('/create-family')}>
+        <Button type="primary" size="large" block onClick={() => navigate('/create-family')}>
           创建家庭
+        </Button>
+        <Button size="large" block onClick={() => navigate('/redeem')}>
+          加入已有家庭
         </Button>
       </Space>
 
       <Text type="secondary" style={{ marginTop: 24, fontSize: 12 }}>
-        首次使用请选择「创建家庭」成为管理员
+        已有邀请码？点击「加入已有家庭」
       </Text>
     </div>
   );
