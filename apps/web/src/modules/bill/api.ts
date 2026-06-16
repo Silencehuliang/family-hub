@@ -6,13 +6,16 @@ import { api } from '@/core/api/client';
 import type { BillRecord, BillCategory, BillTag, BillStats, BillRecurring } from '@family-hub/shared';
 import type { CreateBillInput, UpdateBillInput, CreateBillTagInput, CreateBillCategoryInput, SetBillBudgetInput, CreateBillRecurringInput } from '@family-hub/shared';
 
+/** 账单 + 分类名(后端 JOIN 返回) */
+export type BillWithCategory = BillRecord & { tags: BillTag[]; cat1Name?: string; cat1Icon?: string; cat2Name?: string; cat2Icon?: string };
+
 // ─── 查询 ─────────────────────────────────────────────────────
 
 /** 账单列表 */
 export function useBills(query: { from?: string; to?: string; category?: string; payer?: string; tag?: string; page?: number }) {
   return useQuery({
     queryKey: ['bills', query],
-    queryFn: () => api.get<{ items: Array<BillRecord & { tags: BillTag[] }>; total: number }>('/api/bill', { query }),
+    queryFn: () => api.get<{ items: BillWithCategory[]; total: number }>('/api/bill', { query }),
   });
 }
 
@@ -20,7 +23,7 @@ export function useBills(query: { from?: string; to?: string; category?: string;
 export function useBill(id: string) {
   return useQuery({
     queryKey: ['bill', id],
-    queryFn: () => api.get<BillRecord & { tags: BillTag[] }>(`/api/bill/${id}`),
+    queryFn: () => api.get<BillWithCategory>(`/api/bill/${id}`),
     enabled: !!id,
   });
 }

@@ -92,7 +92,7 @@ export function BillListPage() {
                 <Card size="small" style={{ marginBottom: 4 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div onClick={() => navigate(`/bill/${record.id}`)} style={{ flex: 1, cursor: 'pointer' }}>
-                      <Text>{record.note || `${record.categoryL1} / ${record.categoryL2}`}</Text>
+                      <Text>{record.note || `${record.cat1Name ?? record.categoryL1} / ${record.cat2Name ?? record.categoryL2}`}</Text>
                       <br />
                       <Space size={4}>
                         {record.tags?.map((tag) => (

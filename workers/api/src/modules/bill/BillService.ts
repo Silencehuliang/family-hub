@@ -55,13 +55,22 @@ export class BillService {
     ).bind(...params).first<{ cnt: number }>();
     const total = countResult?.cnt ?? 0;
 
-    // 查询列表(D1 返回 snake_case,映射为 camelCase)
+    // 查询列表(D1 返回 snake_case,映射为 camelCase) + JOIN 分类名
     const rawItems = await findMany<Record<string, unknown>>(
       this.db,
-      `SELECT DISTINCT b.* FROM bill_record b ${joinClause} WHERE ${where} ORDER BY b.bill_date DESC, b.created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT DISTINCT b.*, c1.name as cat1_name, c1.icon as cat1_icon, c2.name as cat2_name, c2.icon as cat2_icon
+       FROM bill_record b
+       LEFT JOIN bill_category c1 ON c1.id = b.category_l1
+       LEFT JOIN bill_category c2 ON c2.id = b.category_l2
+       ${joinClause}
+       WHERE ${where}
+       ORDER BY b.bill_date DESC, b.created_at DESC LIMIT ? OFFSET ?`,
       ...params, pageSize, offset,
     );
-    const items = camelCaseAll<BillRecord>(rawItems);
+    const items = rawItems.map((r) => {
+      const bill = camelCase<BillRecord & { cat1Name?: string; cat1Icon?: string; cat2Name?: string; cat2Icon?: string }>(r);
+      return bill;
+    });
 
     // 批量查询标签
     if (items.length === 0) return { items: [], total: 0 };
@@ -91,15 +100,19 @@ export class BillService {
   // ──────────────────────────────────────────────────────────
   // 详情
   // ──────────────────────────────────────────────────────────
-  async getById(id: string, familyId: string): Promise<BillRecord & { tags: BillTag[] }> {
+  async getById(id: string, familyId: string): Promise<BillRecord & { tags: BillTag[]; cat1Name?: string; cat2Name?: string }> {
     const raw = await findOne<Record<string, unknown>>(
       this.db,
-      'SELECT * FROM bill_record WHERE id = ? AND family_id = ? AND deleted_at IS NULL',
+      `SELECT b.*, c1.name as cat1_name, c2.name as cat2_name
+       FROM bill_record b
+       LEFT JOIN bill_category c1 ON c1.id = b.category_l1
+       LEFT JOIN bill_category c2 ON c2.id = b.category_l2
+       WHERE b.id = ? AND b.family_id = ? AND b.deleted_at IS NULL`,
       id,
       familyId,
     );
     if (!raw) throw new BizError(ErrorCode.NOT_FOUND, '账单不存在');
-    const record = camelCase<BillRecord>(raw);
+    const record = camelCase<BillRecord & { cat1Name?: string; cat2Name?: string }>(raw);
 
     const rawTags = await findMany<Record<string, unknown>>(
       this.db,

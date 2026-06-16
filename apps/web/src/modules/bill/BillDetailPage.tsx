@@ -4,7 +4,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Typography, Tag, Button, Space, Popconfirm, message } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useBill, useDeleteBill } from './api';
+import { useBill, useDeleteBill, type BillWithCategory } from './api';
 
 const { Title, Text } = Typography;
 
@@ -47,7 +47,7 @@ export function BillDetailPage() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <Text type="secondary">分类</Text>
-              <Text>{bill.categoryL1} / {bill.categoryL2}</Text>
+              <Text>{(bill as BillWithCategory).cat1Name ?? bill.categoryL1} / {(bill as BillWithCategory).cat2Name ?? bill.categoryL2}</Text>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <Text type="secondary">付款人</Text>
