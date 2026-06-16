@@ -8,24 +8,40 @@ import { BizError } from '../../utils/response';
 import { findOne, findMany, execute, now } from '../../db/client';
 import { nanoid } from '../../utils/crypto';
 
+/** D1 snake_case → TS camelCase 映射 */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCategory(row: any): BillCategory {
+  return {
+    id: row.id,
+    familyId: row.family_id ?? row.familyId,
+    level: row.level,
+    name: row.name,
+    parentId: row.parent_id ?? row.parentId,
+    icon: row.icon,
+    color: row.color,
+    sort: row.sort,
+    hidden: Boolean(row.hidden),
+  };
+}
+
 export class CategoryService {
   constructor(private db: D1Database) {}
 
   /** 获取家庭的分类树(一级 + 二级) */
   async getTree(familyId: string): Promise<{ l1: BillCategory[]; l2: BillCategory[] }> {
-    const [l1, l2] = await Promise.all([
-      findMany<BillCategory>(
+    const [l1Raw, l2Raw] = await Promise.all([
+      findMany<Record<string, unknown>>(
         this.db,
         'SELECT * FROM bill_category WHERE family_id = ? AND level = 1 ORDER BY sort',
         familyId,
       ),
-      findMany<BillCategory>(
+      findMany<Record<string, unknown>>(
         this.db,
         'SELECT * FROM bill_category WHERE family_id = ? AND level = 2 ORDER BY sort',
         familyId,
       ),
     ]);
-    return { l1, l2 };
+    return { l1: l1Raw.map(mapCategory), l2: l2Raw.map(mapCategory) };
   }
 
   /** 新建二级分类 */
@@ -58,7 +74,7 @@ export class CategoryService {
       id, familyId, input.name, input.parentId, input.icon ?? null, input.color ?? null, ts,
     );
 
-    return findOne<BillCategory>(this.db, 'SELECT * FROM bill_category WHERE id = ?', id) as Promise<BillCategory>;
+    return findOne<Record<string, unknown>>(this.db, 'SELECT * FROM bill_category WHERE id = ?', id).then((r) => r ? mapCategory(r) : null) as Promise<BillCategory>;
   }
 
   /** 编辑分类(名称/图标/颜色) */
