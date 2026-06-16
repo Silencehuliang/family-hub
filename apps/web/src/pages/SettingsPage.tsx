@@ -15,6 +15,7 @@ import { useAuthStore } from '@/core/auth/store';
 import { api } from '@/core/api/client';
 import type { Device } from '@family-hub/shared';
 import { BRAND_COLOR } from '@family-hub/shared';
+import { EditProfileModal } from '@/components/EditProfileModal';
 
 const { Title, Text } = Typography;
 
@@ -23,6 +24,7 @@ export function SettingsPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
 
   // 加载设备列表
   useEffect(() => {
@@ -97,6 +99,15 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      <Button
+        type="default"
+        block
+        style={{ marginTop: -8, marginBottom: 16 }}
+        onClick={() => setProfileEditOpen(true)}
+      >
+        编辑资料
+      </Button>
+
       {/* 邀请家人(管理员) */}
       {member?.role === 'admin' && (
         <Card title="邀请家人" style={{ marginBottom: 16 }}>
@@ -166,6 +177,14 @@ export function SettingsPage() {
       >
         退出登录
       </Button>
+
+      {member && (
+        <EditProfileModal
+          open={profileEditOpen}
+          member={member}
+          onClose={() => setProfileEditOpen(false)}
+        />
+      )}
     </div>
   );
 }
