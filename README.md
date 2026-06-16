@@ -14,7 +14,7 @@
 | 对象存储 | Cloudflare R2 |
 | 缓存/会话 | Cloudflare KV |
 | 通知 | 飞书群机器人 (主) + Web Push (辅) |
-| 部署 | GitHub → Cloudflare CI/CD |
+| 部署 | Cloudflare Pages Git 集成 + wrangler |
 | Monorepo | pnpm workspaces |
 
 ## 目录结构
@@ -47,7 +47,8 @@ family-hub/
 ├── packages/
 │   └── shared/                 # 共享类型/zod schema/枚举/常量
 ├── docs/                       # 产品文档
-└── .github/workflows/          # CI/CD
+├── wrangler.toml               # Pages 根配置(指定输出目录)
+└── .github/workflows/          # CI(PR 检查)
 
 ## 本地开发
 
@@ -110,14 +111,26 @@ npx wrangler secret put CONFIG_ENCRYPTION_KEY
 
 ### CI/CD
 
+部署走 **Cloudflare Pages Git 集成**，CI 走 GitHub Actions。
+
+#### GitHub Actions (CI)
+
 | 分支 | 触发 | 行为 |
 |------|------|------|
-| `main` | push | 构建 + 部署 Workers + 应用 D1 迁移 + 部署 Pages |
 | `dev` | push | 仅 CI 检查(lint + typecheck + build) |
 | 任意 | PR → `main`/`dev` | 仅 CI 检查 |
 
-**前置条件** — 在 GitHub 仓库设置 Secrets:
-| Secret | 值 |
+#### Cloudflare Pages (自动构建 + 部署)
+
+| 分支 | 触发 | 行为 |
+|------|------|------|
+| `main` | push | `pnpm run cf:pipeline` → typecheck → lint → D1 迁移 → 构建前端 → 部署 Pages + cron Worker |
+
+在 [Cloudflare Dashboard → Pages → `famhub`](https://dash.cloudflare.com/) 查看构建状态。
+
+**前置条件** — Cloudflare Pages 环境变量:
+
+| 变量名 | 值 |
 |--------|-----|
 | `CF_API_TOKEN` | Cloudflare API Token(权限: Workers/D1/Pages/KV 编辑) |
 | `CF_ACCOUNT_ID` | `55bbf1431c6d6ea28b1237b601cc1338` |
