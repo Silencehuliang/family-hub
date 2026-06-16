@@ -33,6 +33,8 @@ export function EventEditPageMobile() {
         location: existing.location ?? '',
         note: existing.note ?? '',
         repeatRule: existing.repeatRule ?? '',
+        startAt: dayjs.unix(existing.startAt).toDate(),
+        endAt: existing.endAt ? dayjs.unix(existing.endAt).toDate() : undefined,
       });
       setAllDay(existing.allDay);
     }

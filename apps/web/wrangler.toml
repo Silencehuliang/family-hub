@@ -1,0 +1,17 @@
+name = "famhub"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "family-hub"
+database_id = "1cad1db6-e65c-4a21-8313-5f14ef1255ba"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "3686d84ff19d4e788a126e4b925e7216"
+
+[vars]
+APP_BASE_URL = "https://famhub-598.pages.dev"
+VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"

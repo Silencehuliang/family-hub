@@ -1,6 +1,6 @@
 /**
- * Cloudflare Workers 入口
- * Hono 应用 + 认证路由 + Cron 定时任务占位
+ * Pages Functions 入口（API 路由）
+ * 被 apps/web/functions/*.ts 导入，同域处理 API 请求
  */
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -72,28 +72,6 @@ app.notFound((c) =>
   c.json({ error: { code: 'NOT_FOUND', message: '接口不存在' } }, 404),
 );
 
-// ── Cron 定时任务(Phase 5 启用) ───────────────────────────────
 export default {
   fetch: app.fetch,
-
-  async scheduled(event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
-    console.log('[cron] scheduled event triggered:', event.cron);
-
-    // Phase 5: 通知调度
-    // ctx.waitUntil(Promise.all([
-    //   notifyDispatcher.checkEvents(),
-    //   notifyDispatcher.checkTodos(),
-    //   billBudgetService.checkOverBudget(),
-    // ]));
-
-    // Phase 2: 周期账单自动生成
-    try {
-      const { RecurringService } = await import('./modules/bill/RecurringService');
-      const svc = new RecurringService(env.DB);
-      const generated = await svc.tick();
-      if (generated > 0) console.log(`[cron] generated ${generated} recurring bills`);
-    } catch (err) {
-      console.error('[cron] recurring tick error:', err);
-    }
-  },
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tag, Empty, Toast, SwipeAction } from 'antd-mobile';
+import { Tag, Empty, Toast, SwipeAction, SpinLoading } from 'antd-mobile';
 import { AddOutline, LeftOutline, RightOutline, UnorderedListOutline, DownlandOutline } from 'antd-mobile-icons';
 import { useBills, useDeleteBill } from './api';
 import dayjs from 'dayjs';
@@ -48,7 +48,9 @@ export function BillListPageMobile() {
           <RightOutline style={{ fontSize: 18, color: '#666' }} onClick={() => setMonth(dayjs(month).add(1, 'month').format('YYYY-MM'))} />
         </div>
 
-        {items.length === 0 && !isLoading ? (
+        {isLoading ? (
+          <div style={{ padding: 48, textAlign: 'center' }}><SpinLoading /></div>
+        ) : items.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <Empty />
           </div>

@@ -4,7 +4,7 @@
 export interface Env {
   // 绑定
   DB: D1Database;
-  BUCKET: R2Bucket;
+  // BUCKET: R2Bucket;   // ⚠️ 暂未启用 R2，使用时取消注释
   KV: KVNamespace;
 
   // 非敏感变量

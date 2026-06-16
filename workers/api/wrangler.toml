@@ -1,5 +1,5 @@
 name = "family-hub-api"
-main = "src/index.ts"
+main = "src/cron.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -15,9 +15,10 @@ database_name = "family-hub"
 database_id = "1cad1db6-e65c-4a21-8313-5f14ef1255ba"
 migrations_dir = "migrations"
 
-[[r2_buckets]]
-binding = "BUCKET"
-bucket_name = "family-hub-assets"
+# [[r2_buckets]]
+# binding = "BUCKET"
+# bucket_name = "family-hub-assets"
+# ⚠️ R2 bucket 尚未创建，需要时取消注释并先启用 R2
 
 [[kv_namespaces]]
 binding = "KV"
@@ -32,7 +33,7 @@ crons = ["0 9 * * *", "*/30 * * * *", "0 0 * * *"]
 
 # ─── 非敏感变量(敏感的用 wrangler secret put)─────────────
 [vars]
-APP_BASE_URL = "http://localhost:8787"
+APP_BASE_URL = "https://famhub-598.pages.dev"
 # VAPID 公钥(Phase 5 启用 Web Push 时生成真实值)
 VAPID_PUBLIC_KEY = "REPLACE_WITH_VAPID_PUBLIC_KEY"
 

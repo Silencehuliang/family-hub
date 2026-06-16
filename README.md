@@ -2,7 +2,7 @@
 
 一个 PWA 家庭管理工具集,支持家庭账单、待办、购物清单、重要日程提醒,可组合扩展,部署于 Cloudflare。
 
-> 当前阶段:**Phase 1 — 基础设施**(脚手架 / 认证 / 迁移 / PWA / CI/CD)
+> 当前阶段:**Phase 5 — 通知与推送**(Phase 1~4 已完成：认证 / 账单 / 待办 / 购物清单 / 日程)
 
 ## 技术栈
 
@@ -22,14 +22,32 @@
 ```
 family-hub/
 ├── apps/
-│   └── web/              # React + Vite PWA 前端
+│   └── web/                    # React + Vite PWA 前端
+│       ├── src/
+│       │   ├── core/           # 公共能力(auth/api/theme/hooks)
+│       │   ├── layout/         # 响应式布局(移动 Tab / PC 侧栏)
+│       │   ├── modules/        # 5 个业务模块
+│       │   │   ├── bill/       # 账单(CRUD + 统计 + 导入)
+│       │   │   ├── todo/       # 待办(CRUD + 子任务)
+│       │   │   ├── shop/       # 购物清单(CRUD + 联动账单)
+│       │   │   ├── calendar/   # 日程(月视图)
+│       │   │   └── workspace/  # 工作台仪表盘
+│       │   ├── pages/          # 公开页(欢迎/登录/创建家庭等)
+│       │   └── registry/       # 模块注册中心(扩展关键)
+│       └── vite.config.ts
 ├── workers/
-│   └── api/              # Cloudflare Workers (Hono) 后端
+│   └── api/                    # Cloudflare Workers (Hono)
+│       ├── src/
+│       │   ├── middleware/     # 认证/日志/错误处理
+│       │   ├── modules/        # 5 个模块的服务层
+│       │   ├── routes/         # 8 个路由文件
+│       │   └── db/             # D1 客户端
+│       ├── migrations/         # 7 个 SQL 迁移文件
+│       └── wrangler.toml
 ├── packages/
-│   └── shared/           # 前后端共享类型、zod schema、枚举
-├── docs/                 # 产品文档 (PRD/架构/UI/交互/详细设计)
-└── .github/workflows/    # CI/CD
-```
+│   └── shared/                 # 共享类型/zod schema/枚举/常量
+├── docs/                       # 产品文档
+└── .github/workflows/          # CI/CD
 
 ## 本地开发
 
@@ -60,22 +78,49 @@ pnpm dev:web   # 前端 Vite dev (http://localhost:5173, 代理 API 到 8787)
 
 ## 部署
 
-### Cloudflare 资源(首次需手动创建)
-1. 创建 D1 数据库:`wrangler d1 create family-hub` → 把 `database_id` 填入 `workers/api/wrangler.toml`
-2. 创建 R2 存储桶:`wrangler r2 bucket create family-hub-assets`
-3. 创建 KV 命名空间:`wrangler kv namespace create KV` → 把 `id` 填入 `wrangler.toml`
-4. 应用远程迁移:`pnpm db:migrate:remote`
-5. 设置 Secrets:
-   ```bash
-   cd workers/api
-   wrangler secret put VAPID_PRIVATE_KEY
-   wrangler secret put CONFIG_ENCRYPTION_KEY
-   ```
+### Cloudflare 资源(已创建)
+| 资源 | ID | 状态 |
+|------|-----|------|
+| D1 数据库 `family-hub` | `1cad1db6-e65c-4a21-8313-5f14ef1255ba` | ✅ 已创建 |
+| KV 命名空间 | `3686d84ff19d4e788a126e4b925e7216` | ✅ 已创建 |
+| R2 存储桶 `family-hub-assets` | — | ⏸ 暂不使用（需时取消注释 `wrangler.toml` 和 `env.ts`） |
+
+### 首次部署流程
+
+```bash
+# 1. 确保已登录 Cloudflare
+npx wrangler whoami
+
+# 2. 创建 D1 数据库(如未创建)
+npx wrangler d1 create family-hub
+
+# 3. 创建 KV 命名空间(如未创建)
+npx wrangler kv namespace create KV
+
+# 4. 创建 R2 存储桶(需要先启用 R2)
+npx wrangler r2 bucket create family-hub-assets
+
+# 5. 应用远程数据库迁移
+pnpm db:migrate:remote
+
+# 6. 设置 Secrets(仅首次)
+npx wrangler secret put VAPID_PRIVATE_KEY
+npx wrangler secret put CONFIG_ENCRYPTION_KEY
+```
 
 ### CI/CD
-- 推送到 `main` 分支 → GitHub Actions 自动构建并部署
-- PR 触发 CI(lint + typecheck + build),不部署
-- 需在 GitHub 仓库 Secrets 中配置 `CF_API_TOKEN`、`CF_ACCOUNT_ID`
+
+| 分支 | 触发 | 行为 |
+|------|------|------|
+| `main` | push | 构建 + 部署 Workers + 应用 D1 迁移 + 部署 Pages |
+| `dev` | push | 仅 CI 检查(lint + typecheck + build) |
+| 任意 | PR → `main`/`dev` | 仅 CI 检查 |
+
+**前置条件** — 在 GitHub 仓库设置 Secrets:
+| Secret | 值 |
+|--------|-----|
+| `CF_API_TOKEN` | Cloudflare API Token(权限: Workers/D1/Pages/KV 编辑) |
+| `CF_ACCOUNT_ID` | `55bbf1431c6d6ea28b1237b601cc1338` |
 
 ## 文档
 详见 `docs/` 目录:

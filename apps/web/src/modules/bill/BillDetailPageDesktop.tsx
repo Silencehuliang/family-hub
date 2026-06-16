@@ -31,7 +31,7 @@ export function BillDetailPageDesktop() {
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text type="secondary">日期</Text><Text>{bill.billDate}</Text></div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text type="secondary">分类</Text><Text>{(bill as BillWithCategory).cat1Name ?? bill.categoryL1} / {(bill as BillWithCategory).cat2Name ?? bill.categoryL2}</Text></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text type="secondary">付款人</Text><Text>{bill.payerId}</Text></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text type="secondary">付款人</Text><Text>{(bill as any).payerName || bill.payerId}</Text></div>
             {bill.tags && bill.tags.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text type="secondary">标签</Text><Space size={4}>{bill.tags.map((tag) => (<Tag key={tag.id} color={tag.color}>{tag.name}</Tag>))}</Space></div>
             )}

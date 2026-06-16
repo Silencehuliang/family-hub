@@ -18,6 +18,7 @@
     "db:migrate:remote": "pnpm --filter @family-hub/api exec wrangler d1 migrations apply family-hub --remote",
     "dev:api": "pnpm --filter @family-hub/api dev",
     "dev:web": "pnpm --filter @family-hub/web dev",
+    "dev:pages": "pnpm --filter @family-hub/web exec wrangler pages dev dist --d1 DB=family-hub --kv KV=3686d84ff19d4e788a126e4b925e7216",
     "build:web": "pnpm --filter @family-hub/web build",
     "clean": "pnpm -r exec rimraf dist .wrangler node_modules"
   },

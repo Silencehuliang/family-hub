@@ -39,7 +39,7 @@ export function BillDetailPageMobile() {
           <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 12, fontSize: 14, lineHeight: 2.2 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#999' }}>日期</span><span>{bill.billDate}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#999' }}>分类</span><span>{(bill as BillWithCategory).cat1Name ?? bill.categoryL1} / {(bill as BillWithCategory).cat2Name ?? bill.categoryL2}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#999' }}>付款人</span><span>{bill.payerId}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#999' }}>付款人</span><span>{(bill as any).payerName || bill.payerId}</span></div>
             {bill.tags && bill.tags.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#999' }}>标签</span><div>{bill.tags.map((tag) => (<Tag key={tag.id} color={tag.color} style={{ fontSize: 11, borderRadius: 4 }}>{tag.name}</Tag>))}</div></div>
             )}

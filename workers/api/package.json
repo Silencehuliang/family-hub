@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev src/index.ts",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
