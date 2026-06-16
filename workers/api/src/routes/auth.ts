@@ -40,6 +40,18 @@ authRoutes.post('/login', async (c) => {
   return ok(c, { memberId: result.memberId });
 });
 
+// ── 设备指纹恢复会话（公开，无需 cookie） ─────────────────────
+authRoutes.post('/restore', async (c) => {
+  const body = await c.req.json();
+  const { fingerprint } = body as { fingerprint: string };
+  if (!fingerprint) return c.json({ error: { code: 'VALIDATION', message: '缺少设备指纹' } }, 422 as const);
+  const svc = createAuthService(c.env.DB, c.env.KV);
+  const result = await svc.restoreSession(fingerprint);
+  if (!result) return c.json({ error: { code: 'NOT_FOUND', message: '无可恢复的会话' } }, 404 as const);
+  setSessionCookie(c, result.token);
+  return c.json({ data: { restored: true } });
+});
+
 // ── 以下需要认证 ───────────────────────────────────────────────
 authRoutes.use('/me', authMiddleware);
 authRoutes.use('/logout', authMiddleware);

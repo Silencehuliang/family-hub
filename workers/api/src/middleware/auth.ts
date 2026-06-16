@@ -122,7 +122,7 @@ export async function createSession(
 export function setSessionCookie(c: { header: (name: string, value: string) => void }, token: string): void {
   c.header(
     'Set-Cookie',
-    `${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_SECONDS}`,
+    `${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}`,
   );
 }
 
@@ -132,7 +132,7 @@ export function setSessionCookie(c: { header: (name: string, value: string) => v
 export function clearSessionCookie(c: { header: (name: string, value: string) => void }): void {
   c.header(
     'Set-Cookie',
-    `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`,
+    `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`,
   );
 }
 

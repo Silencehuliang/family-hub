@@ -254,6 +254,34 @@ export class AuthService {
   }
 
   // ──────────────────────────────────────────────────────────
+  // 设备指纹恢复会话（PWA 无 cookie 时兜底）
+  // ──────────────────────────────────────────────────────────
+  async restoreSession(fingerprint: string): Promise<{ token: string; memberId: string } | null> {
+    const device = await findOne<{ id: string; member_id: string }>(
+      this.db,
+      'SELECT id, member_id FROM sys_device WHERE fingerprint = ? AND trusted = 1',
+      fingerprint,
+    );
+    if (!device) return null;
+
+    const member = await findOne<{ family_id: string; role: string }>(
+      this.db,
+      'SELECT family_id, role FROM sys_member WHERE id = ?',
+      device.member_id,
+    );
+    if (!member) return null;
+
+    const token = await createSession(this.kv, {
+      memberId: device.member_id,
+      familyId: member.family_id,
+      role: member.role,
+      deviceId: device.id,
+    });
+
+    return { token, memberId: device.member_id };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // 修改 PIN
   // ──────────────────────────────────────────────────────────
   async changePin(memberId: string, oldPin: string, newPin: string): Promise<void> {

@@ -40,8 +40,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+      return;
     } catch {
-      // 未登录或会话失效
+      // cookie 失效,尝试设备指纹恢复
+    }
+    try {
+      const fingerprint = await getFingerprint();
+      await api.post('/auth/restore', { fingerprint });
+      const info = await api.get<SessionInfo>('/auth/me');
+      set({
+        member: info.member,
+        family: info.family,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch {
       set({ isAuthenticated: false, isLoading: false });
     }
   },
