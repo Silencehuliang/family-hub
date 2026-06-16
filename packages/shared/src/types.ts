@@ -142,6 +142,19 @@ export interface ShopItem {
   sort: number;
 }
 
+/** 日程参与成员 */
+export interface EventParticipant {
+  eventId: string;
+  memberId: string;
+}
+
+/** 日程提醒 */
+export interface EventReminder {
+  id: string;
+  eventId: string;
+  offsetMinutes: number;
+}
+
 /** 日程 */
 export interface EventItem {
   id: string;
@@ -154,6 +167,8 @@ export interface EventItem {
   location?: string;
   note?: string;
   repeatRule?: string;
+  participants?: EventParticipant[];
+  reminders?: EventReminder[];
   createdBy: string;
   createdAt: number;
 }

@@ -12,6 +12,7 @@ import { BudgetService } from '../modules/bill/BudgetService';
 import { AuthService } from '../modules/auth/AuthService';
 import { TodoService } from '../modules/todo/TodoService';
 import { ShopService } from '../modules/shop/ShopService';
+import { EventService } from '../modules/event/EventService';
 
 export function createBillService(db: D1Database): BillService {
   return new BillService(db);
@@ -47,4 +48,8 @@ export function createTodoService(db: D1Database): TodoService {
 
 export function createShopService(db: D1Database): ShopService {
   return new ShopService(db);
+}
+
+export function createEventService(db: D1Database): EventService {
+  return new EventService(db);
 }

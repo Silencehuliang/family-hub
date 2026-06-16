@@ -203,3 +203,32 @@ export const shopToBillSchema = z.object({
   payerId: z.string().min(1),
 });
 export type ShopToBillInput = z.infer<typeof shopToBillSchema>;
+
+// ═══════════════════════════════════════════════════════════════
+// 日程相关 schema
+// ═══════════════════════════════════════════════════════════════
+
+/** 创建日程 */
+export const createEventSchema = z.object({
+  title: z.string().min(1).max(100),
+  type: z.enum(['birthday', 'anniversary', 'medical', 'bill', 'travel', 'id_expiring', 'other']),
+  startAt: z.number().positive(),
+  endAt: z.number().positive().optional(),
+  allDay: z.boolean().default(false),
+  location: z.string().max(200).optional(),
+  note: z.string().max(500).optional(),
+  repeatRule: z.string().max(50).optional(),
+  participantIds: z.array(z.string()).optional(),
+  reminderOffsets: z.array(z.number().int()).optional(),
+});
+export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+/** 更新日程 */
+export const updateEventSchema = createEventSchema.partial();
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;
+
+/** 月历查询 */
+export const calendarQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/, '月份格式 YYYY-MM'),
+});
+export type CalendarQueryInput = z.infer<typeof calendarQuerySchema>;

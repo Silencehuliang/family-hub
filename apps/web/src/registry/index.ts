@@ -7,8 +7,7 @@ import { workspaceModule } from '@/modules/workspace';
 import { billModule } from '@/modules/bill';
 import { todoModule } from '@/modules/todo';
 import { shopModule } from '@/modules/shop';
-// Phase 4+ 启用:
-// import { calendarModule } from '@/modules/calendar';
+import { calendarModule } from '@/modules/calendar';
 
 /** 已注册模块(按 order 排序) */
 export const modules: ModuleManifest[] = [
@@ -16,7 +15,7 @@ export const modules: ModuleManifest[] = [
   billModule,
   todoModule,
   shopModule,
-  // calendarModule,
+  calendarModule,
 ].sort((a, b) => a.order - b.order);
 
 /** 获取所有路由(flatten) */
