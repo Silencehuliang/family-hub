@@ -1,14 +1,17 @@
 /**
  * 认证中间件
  * 校验会话 token(KV),注入 familyId/memberId/deviceId 到 c.var.auth
+ * Token 来源: Authorization: Bearer <token> (兼容) 或 cookie: sess_token
  */
 import type { MiddlewareHandler } from 'hono';
-import { ErrorCode } from '@family-hub/shared';
+import { getCookie } from 'hono/cookie';
+import { ErrorCode, SESSION_TTL_SECONDS } from '@family-hub/shared';
 import { BizError } from '../utils/response';
 import type { Env, HonoVars } from '../env';
-import { SESSION_TTL_SECONDS } from '@family-hub/shared';
 
 const SESSION_PREFIX = 'sess:';
+
+const SESSION_COOKIE = 'sess_token';
 
 /** 会话数据结构(存 KV) */
 interface SessionData {
@@ -19,19 +22,24 @@ interface SessionData {
   issuedAt: number;
 }
 
+/** 从请求中提取会话 token（header 优先，cookie 兜底） */
+function extractToken(c: { req: { header: (name: string) => string | undefined } }): string | null {
+  const authHeader = c.req.header('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const t = authHeader.slice(7);
+    if (t) return t;
+  }
+  return getCookie(c as Parameters<typeof getCookie>[0], SESSION_COOKIE) ?? null;
+}
+
 /**
- * 认证中间件:校验 Authorization: Bearer <token>
+ * 认证中间件
  * 成功后在 c.var.auth 注入 AuthContext
  */
 export const authMiddleware: MiddlewareHandler<{ Bindings: Env; Variables: HonoVars }> = async (c, next) => {
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new BizError(ErrorCode.UNAUTHORIZED, '缺少认证令牌');
-  }
-
-  const token = authHeader.slice(7);
+  const token = extractToken(c);
   if (!token) {
-    throw new BizError(ErrorCode.UNAUTHORIZED, '令牌格式错误');
+    throw new BizError(ErrorCode.UNAUTHORIZED, '缺少认证令牌');
   }
 
   // 从 KV 读取会话
@@ -106,6 +114,26 @@ export async function createSession(
   });
 
   return token;
+}
+
+/**
+ * 设置会话 cookie（更新会话 TTL 并下发 cookie）
+ */
+export function setSessionCookie(c: { header: (name: string, value: string) => void }, token: string): void {
+  c.header(
+    'Set-Cookie',
+    `${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_SECONDS}`,
+  );
+}
+
+/**
+ * 清除会话 cookie（登出时调用）
+ */
+export function clearSessionCookie(c: { header: (name: string, value: string) => void }): void {
+  c.header(
+    'Set-Cookie',
+    `${SESSION_COOKIE}=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`,
+  );
 }
 
 /**

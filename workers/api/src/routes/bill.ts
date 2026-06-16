@@ -6,14 +6,13 @@ import { Hono } from 'hono';
 import {
   createBillSchema, updateBillSchema, createBillTagSchema,
   createBillCategorySchema, setBillBudgetSchema, createBillRecurringSchema,
+  billImportConfirmSchema,
 } from '@family-hub/shared';
-import { BillService } from '../modules/bill/BillService';
-import { CategoryService } from '../modules/bill/CategoryService';
-import { TagService } from '../modules/bill/TagService';
-import { ImportService } from '../modules/bill/ImportService';
-import { RecurringService } from '../modules/bill/RecurringService';
-import { BudgetService } from '../modules/bill/BudgetService';
 import { ok } from '../utils/response';
+import {
+  createBillService, createCategoryService, createTagService,
+  createImportService, createRecurringService, createBudgetService,
+} from '../utils/serviceFactory';
 import type { Env, HonoVars } from '../env';
 
 export const billRoutes = new Hono<{ Bindings: Env; Variables: HonoVars }>();
@@ -25,7 +24,7 @@ export const billRoutes = new Hono<{ Bindings: Env; Variables: HonoVars }>();
 // 列表
 billRoutes.get('/', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const query = {
     from: c.req.query('from'),
     to: c.req.query('to'),
@@ -42,7 +41,7 @@ billRoutes.get('/', async (c) => {
 // 详情
 billRoutes.get('/:id', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const record = await svc.getById(c.req.param('id'), familyId);
   return ok(c, record);
 });
@@ -52,7 +51,7 @@ billRoutes.post('/', async (c) => {
   const { familyId, memberId } = c.var.auth;
   const body = await c.req.json();
   const input = createBillSchema.parse(body);
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const record = await svc.create(familyId, memberId, input);
   return c.json({ data: record }, 201);
 });
@@ -62,7 +61,7 @@ billRoutes.put('/:id', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
   const input = updateBillSchema.parse(body);
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const record = await svc.update(c.req.param('id'), familyId, input);
   return ok(c, record);
 });
@@ -70,7 +69,7 @@ billRoutes.put('/:id', async (c) => {
 // 删除(软删除)
 billRoutes.delete('/:id', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   await svc.delete(c.req.param('id'), familyId);
   return ok(c, { success: true });
 });
@@ -78,7 +77,7 @@ billRoutes.delete('/:id', async (c) => {
 // 恢复
 billRoutes.post('/:id/restore', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   await svc.restore(c.req.param('id'), familyId);
   return ok(c, { success: true });
 });
@@ -90,7 +89,7 @@ billRoutes.post('/:id/restore', async (c) => {
 billRoutes.get('/stats/summary', async (c) => {
   const { familyId } = c.var.auth;
   const month = c.req.query('month') ?? new Date().toISOString().slice(0, 7);
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const stats = await svc.stats(familyId, month);
   return ok(c, stats);
 });
@@ -103,7 +102,7 @@ billRoutes.get('/export/csv', async (c) => {
   const { familyId } = c.var.auth;
   const from = c.req.query('from');
   const to = c.req.query('to');
-  const svc = new BillService(c.env.DB);
+  const svc = createBillService(c.env.DB);
   const csv = await svc.exportCsv(familyId, from, to);
   return new Response(csv, {
     headers: {
@@ -120,9 +119,16 @@ billRoutes.get('/export/csv', async (c) => {
 // 上传 CSV 并解析
 billRoutes.post('/import', async (c) => {
   const { familyId } = c.var.auth;
+
+  // 校验 Content-Type
+  const contentType = c.req.header('content-type') ?? '';
+  if (!contentType.includes('text/csv')) {
+    return c.json({ error: { code: 'VALIDATION', message: '仅支持 CSV 格式' } }, 422);
+  }
+
   const body = await c.req.text(); // CSV 文本直接作为 body
 
-  const svc = new ImportService(c.env.DB);
+  const svc = createImportService(c.env.DB);
   const rows = svc.parseCsv(body);
   if (rows.length === 0) {
     return c.json({ error: { code: 'VALIDATION', message: 'CSV 无有效数据' } }, 422);
@@ -143,14 +149,10 @@ billRoutes.post('/import', async (c) => {
 billRoutes.post('/import/confirm', async (c) => {
   const { familyId, memberId } = c.var.auth;
   const body = await c.req.json();
-  const { rows } = body as { rows: Array<{ billDate: string; amount: number; categoryL1: string; categoryL2: string; payerName: string; note?: string }>; skipFailed: boolean };
+  const input = billImportConfirmSchema.parse(body);
 
-  if (!rows || rows.length === 0) {
-    return c.json({ error: { code: 'VALIDATION', message: '无数据可导入' } }, 422);
-  }
-
-  const svc = new ImportService(c.env.DB);
-  const result = await svc.confirmImport(familyId, memberId, rows);
+  const svc = createImportService(c.env.DB);
+  const result = await svc.confirmImport(familyId, memberId, input.rows);
   return ok(c, result);
 });
 
@@ -160,7 +162,7 @@ billRoutes.post('/import/confirm', async (c) => {
 
 billRoutes.get('/category/tree', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new CategoryService(c.env.DB);
+  const svc = createCategoryService(c.env.DB);
   const tree = await svc.getTree(familyId);
   return ok(c, tree);
 });
@@ -169,7 +171,7 @@ billRoutes.post('/category', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
   const input = createBillCategorySchema.parse(body);
-  const svc = new CategoryService(c.env.DB);
+  const svc = createCategoryService(c.env.DB);
   const cat = await svc.create(familyId, input);
   return c.json({ data: cat }, 201);
 });
@@ -177,21 +179,21 @@ billRoutes.post('/category', async (c) => {
 billRoutes.put('/category/:id', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
-  const svc = new CategoryService(c.env.DB);
+  const svc = createCategoryService(c.env.DB);
   await svc.update(c.req.param('id'), familyId, body);
   return ok(c, { success: true });
 });
 
 billRoutes.post('/category/:id/hide', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new CategoryService(c.env.DB);
+  const svc = createCategoryService(c.env.DB);
   await svc.setHidden(c.req.param('id'), familyId, true);
   return ok(c, { success: true });
 });
 
 billRoutes.post('/category/:id/show', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new CategoryService(c.env.DB);
+  const svc = createCategoryService(c.env.DB);
   await svc.setHidden(c.req.param('id'), familyId, false);
   return ok(c, { success: true });
 });
@@ -202,7 +204,7 @@ billRoutes.post('/category/:id/show', async (c) => {
 
 billRoutes.get('/tag', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new TagService(c.env.DB);
+  const svc = createTagService(c.env.DB);
   const tags = await svc.list(familyId);
   return ok(c, tags);
 });
@@ -211,14 +213,14 @@ billRoutes.post('/tag', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
   const input = createBillTagSchema.parse(body);
-  const svc = new TagService(c.env.DB);
+  const svc = createTagService(c.env.DB);
   const tag = await svc.create(familyId, input);
   return c.json({ data: tag }, 201);
 });
 
 billRoutes.post('/tag/:id/archive', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new TagService(c.env.DB);
+  const svc = createTagService(c.env.DB);
   await svc.archive(c.req.param('id'), familyId);
   return ok(c, { success: true });
 });
@@ -229,7 +231,7 @@ billRoutes.post('/tag/:id/archive', async (c) => {
 
 billRoutes.get('/recurring', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new RecurringService(c.env.DB);
+  const svc = createRecurringService(c.env.DB);
   const list = await svc.list(familyId);
   return ok(c, list);
 });
@@ -238,7 +240,7 @@ billRoutes.post('/recurring', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
   const input = createBillRecurringSchema.parse(body);
-  const svc = new RecurringService(c.env.DB);
+  const svc = createRecurringService(c.env.DB);
   const rec = await svc.create(familyId, input);
   return c.json({ data: rec }, 201);
 });
@@ -246,14 +248,14 @@ billRoutes.post('/recurring', async (c) => {
 billRoutes.post('/recurring/:id/toggle', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json() as { active: boolean };
-  const svc = new RecurringService(c.env.DB);
+  const svc = createRecurringService(c.env.DB);
   await svc.setActive(c.req.param('id'), familyId, body.active);
   return ok(c, { success: true });
 });
 
 billRoutes.delete('/recurring/:id', async (c) => {
   const { familyId } = c.var.auth;
-  const svc = new RecurringService(c.env.DB);
+  const svc = createRecurringService(c.env.DB);
   await svc.delete(c.req.param('id'), familyId);
   return ok(c, { success: true });
 });
@@ -265,7 +267,7 @@ billRoutes.delete('/recurring/:id', async (c) => {
 billRoutes.get('/budget', async (c) => {
   const { familyId } = c.var.auth;
   const month = c.req.query('month') ?? new Date().toISOString().slice(0, 7);
-  const svc = new BudgetService(c.env.DB);
+  const svc = createBudgetService(c.env.DB);
   const budgets = await svc.list(familyId, month);
   return ok(c, budgets);
 });
@@ -274,7 +276,7 @@ billRoutes.post('/budget', async (c) => {
   const { familyId } = c.var.auth;
   const body = await c.req.json();
   const input = setBillBudgetSchema.parse(body);
-  const svc = new BudgetService(c.env.DB);
+  const svc = createBudgetService(c.env.DB);
   await svc.set(familyId, input);
   return ok(c, { success: true });
 });

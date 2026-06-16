@@ -192,16 +192,16 @@ export class BillService {
     params.push(id);
     await execute(this.db, `UPDATE bill_record SET ${sets.join(', ')} WHERE id = ?`, ...params);
 
-    // 更新标签
+    // 更新标签（事务：先删后插）
     if (input.tags !== undefined) {
-      await execute(this.db, 'DELETE FROM bill_record_tag WHERE record_id = ?', id);
-      if (input.tags.length > 0) {
-        const stmts = input.tags.map((tagId) => ({
+      const stmts: Array<{ sql: string; params: unknown[] }> = [
+        { sql: 'DELETE FROM bill_record_tag WHERE record_id = ?', params: [id] },
+        ...input.tags.map((tagId) => ({
           sql: 'INSERT OR IGNORE INTO bill_record_tag (record_id, tag_id) VALUES (?, ?)',
           params: [id, tagId],
-        }));
-        await batchExecute(this.db, stmts);
-      }
+        })),
+      ];
+      await batchExecute(this.db, stmts);
     }
 
     return this.getById(id, familyId);

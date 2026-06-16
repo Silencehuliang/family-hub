@@ -16,6 +16,8 @@ export const createFamilySchema = z.object({
   familyName: z.string().min(1).max(50),
   nickname: z.string().min(1).max(30),
   pin: pinSchema,
+  fingerprint: fingerprintSchema,
+  deviceName: z.string().max(120).optional(),
 });
 export type CreateFamilyInput = z.infer<typeof createFamilySchema>;
 
@@ -113,9 +115,19 @@ export const createBillRecurringSchema = z.object({
 });
 export type CreateBillRecurringInput = z.infer<typeof createBillRecurringSchema>;
 
+/** 导入 CSV 行 */
+const importCsvRowSchema = z.object({
+  billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式 YYYY-MM-DD'),
+  amount: z.number().positive(),
+  categoryL1: z.string().min(1),
+  categoryL2: z.string().min(1),
+  payerName: z.string().min(1),
+  note: z.string().max(200).optional(),
+});
+
 /** 导入确认 */
 export const billImportConfirmSchema = z.object({
-  jobId: z.string().min(1),
+  rows: z.array(importCsvRowSchema).min(1, '无数据可导入'),
   skipFailed: z.boolean().default(true),
 });
 export type BillImportConfirmInput = z.infer<typeof billImportConfirmSchema>;

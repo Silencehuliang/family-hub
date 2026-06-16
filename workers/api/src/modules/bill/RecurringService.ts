@@ -7,17 +7,19 @@ import type { BillRecurring } from '@family-hub/shared';
 import { BizError } from '../../utils/response';
 import { findOne, findMany, execute, now } from '../../db/client';
 import { nanoid } from '../../utils/crypto';
+import { camelCaseAll } from '../../utils/mapper';
 
 export class RecurringService {
   constructor(private db: D1Database) {}
 
   /** 列表 */
   async list(familyId: string): Promise<BillRecurring[]> {
-    return findMany<BillRecurring>(
+    const raw = await findMany<Record<string, unknown>>(
       this.db,
       'SELECT * FROM bill_recurring WHERE family_id = ? ORDER BY next_date',
       familyId,
     );
+    return camelCaseAll<BillRecurring>(raw);
   }
 
   /** 新建 */

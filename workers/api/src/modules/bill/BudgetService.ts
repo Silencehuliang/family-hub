@@ -54,27 +54,36 @@ export class BudgetService {
     );
     if (budgets.length === 0) return [];
 
-    const overspent: Array<{ name: string; budget: number; spent: number; overspent: number }> = [];
+    // 一次性查询所有分类支出（按 category_l1 聚合）
+    const spentByCategory = new Map<string, number>();
+    const rows = await this.db.prepare(
+      `SELECT COALESCE(category_l1, '__total__') as cat, SUM(amount) as spent
+       FROM bill_record
+       WHERE family_id = ? AND bill_date || '' LIKE ? AND deleted_at IS NULL
+       GROUP BY category_l1`
+    ).bind(familyId, `${month}%`).all<{ cat: string; spent: number }>();
+    for (const r of rows.results ?? []) {
+      spentByCategory.set(r.cat, r.spent);
+    }
+    const totalSpent = spentByCategory.get('__total__') ?? 0;
 
-    for (const b of budgets) {
-      let spent: number;
-      let name: string;
-
-      if (b.category_l1) {
-        const row = await this.db.prepare(
-          'SELECT COALESCE(SUM(amount), 0) as total FROM bill_record WHERE family_id = ? AND category_l1 = ? AND bill_date LIKE ? AND deleted_at IS NULL'
-        ).bind(familyId, b.category_l1, `${month}%`).first<{ total: number }>();
-        spent = row?.total ?? 0;
-
-        const cat = await this.db.prepare('SELECT name FROM bill_category WHERE id = ?').bind(b.category_l1).first<{ name: string }>();
-        name = cat?.name ?? '未知分类';
-      } else {
-        const row = await this.db.prepare(
-          'SELECT COALESCE(SUM(amount), 0) as total FROM bill_record WHERE family_id = ? AND bill_date LIKE ? AND deleted_at IS NULL'
-        ).bind(familyId, `${month}%`).first<{ total: number }>();
-        spent = row?.total ?? 0;
-        name = '总预算';
+    // 一次性查询所有分类名称
+    const catIds = [...new Set(budgets.map((b) => b.category_l1).filter(Boolean))] as string[];
+    const catNames = new Map<string, string>();
+    if (catIds.length > 0) {
+      const placeholders = catIds.map(() => '?').join(',');
+      const nameRows = await this.db.prepare(
+        `SELECT id, name FROM bill_category WHERE id IN (${placeholders})`
+      ).bind(...catIds).all<{ id: string; name: string }>();
+      for (const r of nameRows.results ?? []) {
+        catNames.set(r.id, r.name);
       }
+    }
+
+    const overspent: Array<{ name: string; budget: number; spent: number; overspent: number }> = [];
+    for (const b of budgets) {
+      const spent = b.category_l1 ? (spentByCategory.get(b.category_l1) ?? 0) : totalSpent;
+      const name = b.category_l1 ? (catNames.get(b.category_l1) ?? '未知分类') : '总预算';
 
       if (spent > b.amount) {
         overspent.push({ name, budget: b.amount, spent, overspent: spent - b.amount });

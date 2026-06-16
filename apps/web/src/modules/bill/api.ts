@@ -134,15 +134,23 @@ export function useCreateRecurring() {
   });
 }
 
+interface ImportCsvRow {
+  billDate: string;
+  amount: number;
+  categoryL1: string;
+  categoryL2: string;
+  payerName: string;
+  note?: string;
+  errors?: string[];
+}
+
 /** 导入 CSV */
 export function useImportCsv() {
   return useMutation({
     mutationFn: (csvText: string) =>
-      fetch('/api/bill/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/csv', 'Authorization': `Bearer ${localStorage.getItem('fh_token')}` },
-        body: csvText,
-      }).then((r) => r.json()).then((j) => j.data),
+      api.post<{ total: number; validCount: number; invalidCount: number; valid: ImportCsvRow[]; invalid: ImportCsvRow[] }>(
+        '/api/bill/import', csvText, { plainText: true },
+      ),
   });
 }
 

@@ -1,19 +1,19 @@
 /**
  * 认证状态(Zustand)
+ * Cookie 鉴权，不再管理 token
  */
 import { create } from 'zustand';
 import type { SessionInfo, Member, Family } from '@family-hub/shared';
-import { api, setToken, clearToken, getToken } from '../api/client';
+import { api } from '../api/client';
 import { getFingerprint, getDeviceName } from './fingerprint';
 
 interface AuthState {
-  token: string | null;
   member: Member | null;
   family: Family | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  /** 初始化:检查本地 token 并拉取 /auth/me */
+  /** 初始化:尝试拉取 /auth/me */
   init: () => Promise<void>;
   /** 创建家庭 */
   createFamily: (input: { familyName: string; nickname: string; pin: string }) => Promise<void>;
@@ -26,41 +26,37 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: getToken(),
   member: null,
   family: null,
   isAuthenticated: false,
   isLoading: true,
 
   init: async () => {
-    const token = getToken();
-    if (!token) {
-      set({ isLoading: false });
-      return;
-    }
     try {
       const info = await api.get<SessionInfo>('/auth/me');
       set({
-        token,
         member: info.member,
         family: info.family,
         isAuthenticated: true,
         isLoading: false,
       });
     } catch {
-      // token 失效
-      clearToken();
-      set({ token: null, isAuthenticated: false, isLoading: false });
+      // 未登录或会话失效
+      set({ isAuthenticated: false, isLoading: false });
     }
   },
 
   createFamily: async (input) => {
-    const result = await api.post<{ token: string; memberId: string }>('/auth/create-family', input);
-    setToken(result.token);
-    // 拉取完整信息
+    const fingerprint = await getFingerprint();
+    const deviceName = getDeviceName();
+    await api.post<{ memberId: string }>('/auth/create-family', {
+      ...input,
+      fingerprint,
+      deviceName,
+    });
+    // cookie 已自动下发，拉取完整信息
     const info = await api.get<SessionInfo>('/auth/me');
     set({
-      token: result.token,
       member: info.member,
       family: info.family,
       isAuthenticated: true,
@@ -70,15 +66,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   redeemInvite: async (input) => {
     const fingerprint = await getFingerprint();
     const deviceName = getDeviceName();
-    const result = await api.post<{ token: string; memberId: string }>('/auth/invite/redeem', {
+    await api.post<{ memberId: string }>('/auth/invite/redeem', {
       ...input,
       fingerprint,
       deviceName,
     });
-    setToken(result.token);
+    // cookie 已自动下发
     const info = await api.get<SessionInfo>('/auth/me');
     set({
-      token: result.token,
       member: info.member,
       family: info.family,
       isAuthenticated: true,
@@ -88,15 +83,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (pin: string) => {
     const fingerprint = await getFingerprint();
     const deviceName = getDeviceName();
-    const result = await api.post<{ token: string; memberId: string }>('/auth/login', {
+    await api.post<{ memberId: string }>('/auth/login', {
       fingerprint,
       pin,
       deviceName,
     });
-    setToken(result.token);
+    // cookie 已自动下发
     const info = await api.get<SessionInfo>('/auth/me');
     set({
-      token: result.token,
       member: info.member,
       family: info.family,
       isAuthenticated: true,
@@ -109,7 +103,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // 忽略错误,本地清理
     }
-    clearToken();
-    set({ token: null, member: null, family: null, isAuthenticated: false });
+    set({ member: null, family: null, isAuthenticated: false });
   },
 }));

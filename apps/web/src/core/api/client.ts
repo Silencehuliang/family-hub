@@ -1,22 +1,8 @@
 /**
  * API 请求客户端(封装 fetch)
- * 自动带 Authorization header,统一错误处理
+ * 统一错误处理，cookie 鉴权
  */
 import { ErrorCode } from '@family-hub/shared';
-
-const TOKEN_KEY = 'fh_token';
-
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
 
 export class ApiError extends Error {
   code: string;
@@ -35,6 +21,7 @@ interface ReqOptions {
   method?: string;
   body?: unknown;
   query?: Record<string, string | number | undefined>;
+  plainText?: boolean;
 }
 
 async function request<T>(path: string, opts: ReqOptions = {}): Promise<T> {
@@ -45,17 +32,21 @@ async function request<T>(path: string, opts: ReqOptions = {}): Promise<T> {
     }
   }
 
-  const token = getToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers: Record<string, string> = {};
+  if (!opts.plainText) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
 
   const res = await fetch(url.toString(), {
     method: opts.method ?? 'GET',
     headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
+    credentials: 'include',
+    body: opts.body ? (opts.plainText ? (opts.body as string) : JSON.stringify(opts.body)) : undefined,
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout));
 
   const json = await res.json();
 
@@ -75,8 +66,8 @@ async function request<T>(path: string, opts: ReqOptions = {}): Promise<T> {
 export const api = {
   get: <T>(path: string, opts?: Omit<ReqOptions, 'method' | 'body'>) =>
     request<T>(path, { ...opts, method: 'GET' }),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body }),
+  post: <T>(path: string, body?: unknown, opts?: Omit<ReqOptions, 'method'>) =>
+    request<T>(path, { ...opts, method: 'POST', body }),
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body }),
   delete: <T>(path: string) =>

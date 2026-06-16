@@ -24,19 +24,22 @@ export class AuthService {
   constructor(private db: D1Database, private kv: KVNamespace) {}
 
   // ──────────────────────────────────────────────────────────
-  // 创建家庭(首成员 = 管理员)
+  // 创建家庭(首成员 = 管理员, 同时绑定设备)
   // ──────────────────────────────────────────────────────────
   async createFamily(input: {
     familyName: string;
     nickname: string;
     pin: string;
+    fingerprint: string;
+    deviceName?: string;
   }): Promise<{ token: string; memberId: string }> {
     const familyId = nanoid();
     const memberId = nanoid();
+    const deviceId = nanoid();
     const pinHash = hashPin(input.pin);
     const ts = now();
 
-    // 事务:创建家庭 + 成员
+    // 事务:创建家庭 + 成员 + 设备
     await this.db.batch([
       this.db.prepare(
         'INSERT INTO sys_family (id, name, created_by, created_at) VALUES (?, ?, ?, ?)'
@@ -44,17 +47,20 @@ export class AuthService {
       this.db.prepare(
         'INSERT INTO sys_member (id, family_id, nickname, role, pin_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)'
       ).bind(memberId, familyId, input.nickname, 'admin', pinHash, ts),
+      this.db.prepare(
+        'INSERT INTO sys_device (id, member_id, fingerprint, device_name, last_active_at, trusted, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)'
+      ).bind(deviceId, memberId, input.fingerprint, input.deviceName ?? null, ts, ts),
     ]);
 
     // 为新家庭复制一份系统分类
     await this.copyCategoriesToFamily(familyId);
 
-    // 创建会话(无设备,管理员首次登录直接给 token)
+    // 创建会话(带设备)
     const token = await createSession(this.kv, {
       memberId,
       familyId,
       role: 'admin',
-      deviceId: '',
+      deviceId,
     });
 
     return { token, memberId };
