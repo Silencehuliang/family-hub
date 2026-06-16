@@ -29,6 +29,9 @@ importers:
       antd-mobile:
         specifier: ^5.37.1
         version: 5.42.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      antd-mobile-icons:
+        specifier: ^0.3.0
+        version: 0.3.0
       dayjs:
         specifier: ^1.11.21
         version: 1.11.21
@@ -48,6 +51,9 @@ importers:
         specifier: ^4.5.5
         version: 4.5.7(@types/react@18.3.31)(react@18.3.1)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20240909.0
+        version: 4.20260615.1
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.31
@@ -66,6 +72,9 @@ importers:
       vite-plugin-pwa:
         specifier: ^0.20.5
         version: 0.20.5(vite@5.4.21(terser@5.48.0))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
+      wrangler:
+        specifier: ^3.78.0
+        version: 3.114.17(@cloudflare/workers-types@4.20260615.1)
 
   packages/shared:
     dependencies:
