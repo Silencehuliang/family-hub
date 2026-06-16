@@ -23,6 +23,8 @@ interface AuthState {
   login: (pin: string) => Promise<void>;
   /** 登出 */
   logout: () => Promise<void>;
+  /** 刷新用户信息（编辑资料后调用） */
+  refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -117,5 +119,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       // 忽略错误,本地清理
     }
     set({ member: null, family: null, isAuthenticated: false });
+  },
+
+  refreshProfile: async () => {
+    try {
+      const info = await api.get<SessionInfo>('/auth/me');
+      set({ member: info.member, family: info.family });
+    } catch {
+      // 忽略，下次打开页面会重新获取
+    }
   },
 }));

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Modal, Input, Avatar, Button, message } from 'antd';
 import { UserOutlined, CameraOutlined } from '@ant-design/icons';
 import { api } from '@/core/api/client';
+import { useAuthStore } from '@/core/auth/store';
 import type { Member } from '@family-hub/shared';
 import { BRAND_COLOR } from '@family-hub/shared';
 
@@ -61,6 +62,7 @@ export function EditProfileModal({ open, member, onClose }: Props) {
 
       await api.patch<{ nickname: string; avatarUrl: string | null }>('/auth/me', body);
       message.success('已保存');
+      await useAuthStore.getState().refreshProfile();
       onClose();
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : '保存失败');
